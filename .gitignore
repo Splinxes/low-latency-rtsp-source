@@ -1,0 +1,31 @@
+# OBS plugin template/bootstrap and local builds
+.bootstrap/
+dist/
+build*/
+out/
+
+# Visual Studio / IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.vcxproj.user
+
+# Build products
+*.dll
+*.pdb
+*.lib
+*.exp
+*.obj
+*.ilk
+*.zip
+
+# Local backups / scratch
+.backup-*/
+backup/
+*.bak
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
