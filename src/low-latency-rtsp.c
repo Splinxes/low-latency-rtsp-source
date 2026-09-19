@@ -35,7 +35,7 @@
 #define PROP_COPY_DIAGNOSTICS "copy_diagnostics"
 #define PROP_VERSION "version_info"
 
-#define LLRTSP_VERSION "0.4.0"
+#define LLRTSP_VERSION "0.5.0"
 
 #define PRESET_LOW_LATENCY 0
 #define PRESET_BALANCED 1
