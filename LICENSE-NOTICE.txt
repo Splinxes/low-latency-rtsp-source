@@ -1,0 +1,8 @@
+OBS - Low Latency RTSP Source
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This plugin is intended to be distributed under the GNU General Public License,
+version 2 or (at your option) any later version, consistent with OBS Studio/libobs.
+
+GStreamer is a separate project distributed primarily under LGPL-2.1-or-later.
+This source package does not redistribute GStreamer binaries.
