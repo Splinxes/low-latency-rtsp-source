@@ -3,13 +3,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Splinxes/obs-low-latency-rtsp-source/releases/latest/download/Low-Latency-RTSP-Setup.exe">
+  <a href="https://github.com/Splinxes/low-latency-rtsp-source/releases/latest/download/Low-Latency-RTSP-Setup.exe">
     <img src="https://img.shields.io/badge/Download%20for%20Windows-.EXE-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Download for Windows">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Splinxes/obs-low-latency-rtsp-source/releases/latest">Latest Release</a>
+  <a href="https://github.com/Splinxes/low-latency-rtsp-source/releases/latest">Latest Release</a>
   ·
   <a href="CHANGELOG.md">Changelog</a>
   ·
