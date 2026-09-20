@@ -28,7 +28,6 @@
 #define SETTING_NO_SIGNAL_MODE "no_signal_mode"
 
 #define PROP_INFO "plugin_info"
-#define PROP_UNIFI_HINT "unifi_rtsp_hint"
 #define PROP_STATUS "status_info"
 #define PROP_REFRESH_STATUS "refresh_status"
 #define PROP_RESET_STATS "reset_stats"
@@ -2304,7 +2303,19 @@ static void llrtsp_video_tick(void *data, float seconds)
     char text[768];
     enum obs_text_info_type type = OBS_TEXT_INFO_NORMAL;
     status_snapshot(ctx, text, sizeof(text), &type);
-    llrtsp_ui_update_status(obs_source_get_name(ctx->source), text, (int)type);
+    const char *source_name = obs_source_get_name(ctx->source);
+    llrtsp_ui_update_status(source_name, text, (int)type);
+
+    /* Keep the UniFi guidance synchronized even when the Properties dialog
+     * opens after the URL was already saved. This updates only the existing
+     * top information label and never rebuilds the OBS properties tree. */
+    gboolean unifi_secure = FALSE;
+    g_mutex_lock(&ctx->settings_mutex);
+    unifi_secure = looks_like_unifi_protect_secure_url(ctx->url);
+    g_mutex_unlock(&ctx->settings_mutex);
+    llrtsp_ui_update_unifi_hint(source_name, obs_module_text("Info"),
+                                obs_module_text("UniFiRTSPHint"),
+                                unifi_secure);
 }
 
 static void llrtsp_update(void *data, obs_data_t *settings)
@@ -2362,6 +2373,8 @@ static void llrtsp_update(void *data, obs_data_t *settings)
     if (url_changed)
         llrtsp_ui_update_unifi_hint(
             obs_source_get_name(ctx->source),
+            obs_module_text("Info"),
+            obs_module_text("UniFiRTSPHint"),
             looks_like_unifi_protect_secure_url(url));
 
     obs_source_set_audio_active(ctx->source, enable_audio);
@@ -2456,20 +2469,6 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_property_t *url = obs_properties_add_text(
         props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
-
-    obs_property_t *unifi_hint = obs_properties_add_text(
-        props, PROP_UNIFI_HINT, obs_module_text("UniFiRTSPHint"),
-        OBS_TEXT_INFO);
-    obs_property_text_set_info_type(unifi_hint, OBS_TEXT_INFO_WARNING);
-    obs_property_text_set_info_word_wrap(unifi_hint, true);
-
-    gboolean show_unifi_hint = FALSE;
-    if (ctx) {
-        g_mutex_lock(&ctx->settings_mutex);
-        show_unifi_hint = looks_like_unifi_protect_secure_url(ctx->url);
-        g_mutex_unlock(&ctx->settings_mutex);
-    }
-    obs_property_set_visible(unifi_hint, show_unifi_hint);
 
     obs_property_t *preset = obs_properties_add_list(
         props, SETTING_PRESET, obs_module_text("Preset"),
