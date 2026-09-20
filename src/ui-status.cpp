@@ -110,19 +110,24 @@ extern "C" void llrtsp_ui_copy_text(const char *text)
 }
 
 extern "C" void llrtsp_ui_update_unifi_hint(const char *source_name,
+                                             const char *base_info_text,
+                                             const char *hint_text,
                                              bool visible)
 {
-    if (!qApp || !source_name || !*source_name)
+    if (!qApp || !source_name || !*source_name || !base_info_text ||
+        !*base_info_text || !hint_text || !*hint_text)
         return;
 
     const QString sourceName = QString::fromUtf8(source_name);
+    const QString baseInfo = QString::fromUtf8(base_info_text);
+    const QString hint = QString::fromUtf8(hint_text);
 
     QMetaObject::invokeMethod(
         qApp,
-        [sourceName, visible]() {
+        [sourceName, baseInfo, hint, visible]() {
             const auto windows = QApplication::topLevelWidgets();
             for (QWidget *window : windows) {
-                if (!window)
+                if (!window || !window->isVisible())
                     continue;
 
                 const char *className = window->metaObject()->className();
@@ -137,13 +142,19 @@ extern "C" void llrtsp_ui_update_unifi_hint(const char *source_name,
 
                 const auto labels = window->findChildren<QLabel *>();
                 for (QLabel *label : labels) {
-                    if (!label->text().contains(
-                            QStringLiteral("UniFi Protect secure RTSPS link detected."),
-                            Qt::CaseSensitive))
+                    if (!label->text().startsWith(baseInfo,
+                                                  Qt::CaseSensitive))
                         continue;
 
+                    const QString desired =
+                        visible
+                            ? baseInfo + QStringLiteral("\n\n⚠ ") + hint
+                            : baseInfo;
+
+                    if (label->text() != desired)
+                        label->setText(desired);
+
                     label->setWordWrap(true);
-                    label->setVisible(visible);
                     return;
                 }
             }
