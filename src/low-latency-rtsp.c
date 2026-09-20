@@ -2540,8 +2540,22 @@ static obs_properties_t *llrtsp_properties(void *data)
         props, PROP_INFO, obs_module_text("Info"), OBS_TEXT_INFO);
     obs_property_text_set_info_word_wrap(info, true);
 
+    /*
+     * A brand-new source starts with the URL visible so the user can paste and
+     * correct it (especially useful for UniFi Protect's RTSPS conversion).
+     * Once a URL has been saved, future Properties sessions use the normal
+     * password-style masked field again.
+     */
+    gboolean has_saved_url = FALSE;
+    if (ctx) {
+        g_mutex_lock(&ctx->settings_mutex);
+        has_saved_url = ctx->url && *ctx->url;
+        g_mutex_unlock(&ctx->settings_mutex);
+    }
+
     obs_property_t *url = obs_properties_add_text(
-        props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
+        props, SETTING_URL, obs_module_text("URL"),
+        has_saved_url ? OBS_TEXT_PASSWORD : OBS_TEXT_DEFAULT);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
 
     obs_property_t *preset = obs_properties_add_list(
