@@ -2,6 +2,7 @@
 
 ## v0.5.1 (development)
 
+- Brand-new sources now show the RTSP URL field in plain text so a pasted URL can be corrected before closing Properties. Once a URL has been saved, future Properties sessions return to the masked password-style field.
 - Disabled libobs async video buffering for this low-latency source with `obs_source_set_async_unbuffered(..., true)`. OBS now keeps the newest delivered frame instead of allowing its async source queue to retain older frames, targeting the small first-add latency that disappears only after a full OBS restart.
 - Moved `Copy Diagnostics`, `Refresh Stats`, and `Reset Stats` under Advanced Settings to keep the default Properties view cleaner.
 - Renamed `GitHub / Updates` to `Update Plugin`; it still opens the project's GitHub Releases page.
