@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.2
+
+- Rebranded the public product name to **Low Latency RTSP** and removed OBS-prefixed product naming.
+- Removed the previous OBS-like project artwork from the repository/README and clarified that the project is an independent third-party plugin for OBS Studio.
+- Updated the Windows installer and Installed Apps display name to **Low Latency RTSP**.
+- Updated the updater user agent to remove OBS-prefixed branding.
+- Made release-asset validation accept both the current `Splinxes/low-latency-rtsp-source` path and the former `Splinxes/obs-low-latency-rtsp-source` path.
+- Corrected the updater error text to report the actual 512 MB download safety limit.
+- Updated the remaining release link to the renamed repository.
+- v0.6.0 users from before the repository rename require one manual EXE upgrade because that installed updater rejects the renamed asset URLs; v0.6.1 and later can follow the current repository path.
+- No changes to the v0.6.1 RTSP codec expansion, low-latency engine, reconnect/watchdog, no-signal behavior, or update progress window.
+
 ## v0.6.1
 
 - Added a visible Windows self-update installation window with a staged progress bar while OBS closes, the package is validated/extracted, the current plugin is backed up, new files are installed, cleanup runs, and OBS is reopened.
