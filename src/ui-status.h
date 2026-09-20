@@ -17,6 +17,12 @@ void llrtsp_ui_update_status(const char *source_name, const char *status_text,
 /* Copy privacy-safe diagnostics to the system clipboard on OBS's UI thread. */
 void llrtsp_ui_copy_text(const char *text);
 
+/*
+ * Show a one-time, privacy-safe hint when a UniFi Protect secure RTSPS URL is
+ * pasted into the RTSP field. The pasted URL itself is never shown.
+ */
+void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name);
+
 #ifdef __cplusplus
 }
 #endif

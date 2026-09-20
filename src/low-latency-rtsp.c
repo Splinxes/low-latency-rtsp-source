@@ -35,7 +35,7 @@
 #define PROP_COPY_DIAGNOSTICS "copy_diagnostics"
 #define PROP_VERSION "version_info"
 
-#define LLRTSP_VERSION "0.5.0"
+#define LLRTSP_VERSION "0.5.1"
 
 #define PRESET_LOW_LATENCY 0
 #define PRESET_BALANCED 1
@@ -97,6 +97,10 @@ struct llrtsp_source {
     gint audio_delay_ms;
     gboolean show_advanced;
     gint no_signal_mode;
+
+    /* UI-only state: avoid repeating the UniFi hint while the same kind of
+     * secure Protect URL remains in the field. */
+    gboolean unifi_hint_active;
 
     gint stop_requested;
     gint restart_requested;
@@ -864,6 +868,46 @@ static void update_property_visibility(obs_properties_t *props, gint preset,
         obs_property_set_visible(audio_delay, enable_audio);
     if (version)
         obs_property_set_visible(version, show_advanced);
+}
+
+static gboolean looks_like_unifi_protect_secure_url(const char *url)
+{
+    if (!url || !*url)
+        return FALSE;
+
+    const gboolean secure_scheme =
+        g_ascii_strncasecmp(url, "rtsps://", 8) == 0;
+    const gboolean protect_port =
+        g_strrstr(url, ":7441/") != NULL ||
+        g_strrstr(url, ":7441?") != NULL;
+    const gboolean srtp_query =
+        g_strrstr(url, "?enableSrtp") != NULL ||
+        g_strrstr(url, "&enableSrtp") != NULL;
+
+    return secure_scheme && (protect_port || srtp_query);
+}
+
+static bool url_modified(void *priv, obs_properties_t *props,
+                         obs_property_t *property, obs_data_t *settings)
+{
+    UNUSED_PARAMETER(props);
+    UNUSED_PARAMETER(property);
+
+    struct llrtsp_source *ctx = priv;
+    if (!ctx)
+        return false;
+
+    const char *url = obs_data_get_string(settings, SETTING_URL);
+    const gboolean show_hint = looks_like_unifi_protect_secure_url(url);
+
+    if (show_hint && !ctx->unifi_hint_active) {
+        ctx->unifi_hint_active = TRUE;
+        llrtsp_ui_show_unifi_rtsp_hint(obs_source_get_name(ctx->source));
+    } else if (!show_hint) {
+        ctx->unifi_hint_active = FALSE;
+    }
+
+    return false;
 }
 
 static bool properties_modified(void *priv, obs_properties_t *props,
@@ -2426,6 +2470,7 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_property_t *url = obs_properties_add_text(
         props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
+    obs_property_set_modified_callback2(url, url_modified, ctx);
 
     obs_property_t *preset = obs_properties_add_list(
         props, SETTING_PRESET, obs_module_text("Preset"),

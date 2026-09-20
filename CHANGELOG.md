@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.1 (development)
+
+- Added a one-time UniFi Protect URL hint when a secure `rtsps://` link using port 7441 or `enableSrtp` is pasted into the RTSP URL field.
+- The hint explains the standard Protect conversion: `rtsps://` to `rtsp://`, port `7441` to `7447`, and removal of `?enableSrtp`, while keeping the stream ID/path unchanged.
+- The popup never displays or logs the pasted RTSP URL or credentials.
+- The plugin does not rewrite the URL automatically.
+- No changes to the streaming, decoder, audio, reconnect, watchdog, or no-signal engine.
+
 ## v0.5.0 (development)
 
 - Aligned the Windows build target with the OBS Studio 32.2.2 SDK.

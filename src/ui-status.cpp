@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QLabel>
 #include <QMetaObject>
+#include <QMessageBox>
 #include <QStyle>
 #include <QString>
 #include <QVariant>
@@ -108,3 +109,58 @@ extern "C" void llrtsp_ui_copy_text(const char *text)
         },
         Qt::QueuedConnection);
 }
+
+extern "C" void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name)
+{
+    if (!qApp || !source_name || !*source_name)
+        return;
+
+    const QString sourceName = QString::fromUtf8(source_name);
+
+    QMetaObject::invokeMethod(
+        qApp,
+        [sourceName]() {
+            QWidget *parent = nullptr;
+            const auto windows = QApplication::topLevelWidgets();
+
+            for (QWidget *window : windows) {
+                if (!window || !window->isVisible())
+                    continue;
+
+                const char *className = window->metaObject()->className();
+                if (!className ||
+                    QString::fromLatin1(className) !=
+                        QStringLiteral("OBSBasicProperties"))
+                    continue;
+
+                if (!window->windowTitle().contains(sourceName,
+                                                     Qt::CaseSensitive))
+                    continue;
+
+                parent = window;
+                break;
+            }
+
+            QMessageBox box(parent);
+            box.setIcon(QMessageBox::Warning);
+            box.setWindowTitle(
+                QStringLiteral("UniFi Protect RTSPS Link Detected"));
+            box.setTextFormat(Qt::PlainText);
+            box.setText(QStringLiteral(
+                "This looks like a secure UniFi Protect RTSPS link. "
+                "Low Latency RTSP currently expects the standard RTSP form "
+                "for this connection."));
+            box.setInformativeText(QStringLiteral(
+                "Change only these parts:\n\n"
+                "rtsps://  ->  rtsp://\n"
+                ":7441     ->  :7447\n"
+                "remove    ->  ?enableSrtp\n\n"
+                "Keep the stream ID/path exactly the same.\n\n"
+                "For privacy, the plugin does not display or modify your "
+                "pasted URL."));
+            box.setStandardButtons(QMessageBox::Ok);
+            box.exec();
+        },
+        Qt::QueuedConnection);
+}
+
