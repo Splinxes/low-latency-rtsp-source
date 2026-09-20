@@ -22,6 +22,9 @@ void llrtsp_ui_copy_text(const char *text);
 /* Open a trusted project URL in the user's default browser. */
 void llrtsp_ui_open_url(const char *url);
 
+/* Check the public GitHub Releases feed and report whether an update exists. */
+void llrtsp_ui_check_for_update(const char *current_version);
+
 /*
  * Append or remove privacy-safe UniFi Protect URL guidance from the existing
  * top information label in an open Properties dialog. The pasted URL itself
