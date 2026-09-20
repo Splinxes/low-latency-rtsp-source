@@ -37,6 +37,7 @@ SetupLogging=yes
 Source: "..\dist\low-latency-rtsp.dll"; DestDir: "{commonappdata}\obs-studio\plugins\low-latency-rtsp\bin\64bit"; Flags: ignoreversion
 Source: "..\data\locale\en-US.ini"; DestDir: "{commonappdata}\obs-studio\plugins\low-latency-rtsp\data\locale"; Flags: ignoreversion
 Source: "..\data\updater\Install-Update.ps1"; DestDir: "{commonappdata}\obs-studio\plugins\low-latency-rtsp\data\updater"; Flags: ignoreversion
+Source: "..\dist\runtime\*"; DestDir: "{commonappdata}\obs-studio\plugins\low-latency-rtsp\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE-NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion
