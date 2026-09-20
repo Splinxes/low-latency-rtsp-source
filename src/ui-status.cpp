@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QMetaObject>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
