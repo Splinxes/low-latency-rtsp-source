@@ -36,7 +36,7 @@
 #define PROP_UPDATE_PLUGIN "update_plugin"
 #define PROP_VERSION "version_info"
 
-#define LLRTSP_VERSION "0.5.4"
+#define LLRTSP_VERSION "0.6.0"
 
 #define PRESET_LOW_LATENCY 0
 #define PRESET_BALANCED 1
