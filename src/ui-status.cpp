@@ -15,6 +15,43 @@
 
 namespace {
 
+static bool window_matches_source(const QWidget *window,
+                                  const QString &source_name)
+{
+    if (!window || source_name.isEmpty())
+        return false;
+
+    const QString title = window->windowTitle();
+    qsizetype from = 0;
+
+    /*
+     * OBS property windows place the source name inside punctuation/quotes
+     * (for example: Properties for 'Camera'). Do not use a plain substring
+     * match here: OBS's automatic names such as "Low Latency RTSP" and
+     * "Low Latency RTSP 2" would otherwise collide and let one source update
+     * another source's open Properties dialog.
+     */
+    while (from < title.size()) {
+        const qsizetype pos =
+            title.indexOf(source_name, from, Qt::CaseSensitive);
+        if (pos < 0)
+            break;
+
+        const qsizetype end = pos + source_name.size();
+        const bool before_ok =
+            pos == 0 || title.at(pos - 1).isPunct();
+        const bool after_ok =
+            end == title.size() || title.at(end).isPunct();
+
+        if (before_ok && after_ok)
+            return true;
+
+        from = pos + 1;
+    }
+
+    return false;
+}
+
 static bool is_status_label(const QLabel *label)
 {
     if (!label)
@@ -76,8 +113,7 @@ extern "C" void llrtsp_ui_update_status(const char *source_name,
                         QStringLiteral("OBSBasicProperties"))
                     continue;
 
-                if (!window->windowTitle().contains(sourceName,
-                                                     Qt::CaseSensitive))
+                if (!window_matches_source(window, sourceName))
                     continue;
 
                 const auto labels = window->findChildren<QLabel *>();
@@ -152,8 +188,7 @@ extern "C" void llrtsp_ui_update_unifi_hint(const char *source_name,
                         QStringLiteral("OBSBasicProperties"))
                     continue;
 
-                if (!window->windowTitle().contains(sourceName,
-                                                     Qt::CaseSensitive))
+                if (!window_matches_source(window, sourceName))
                     continue;
 
                 const auto labels = window->findChildren<QLabel *>();
