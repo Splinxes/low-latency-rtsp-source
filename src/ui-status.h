@@ -20,10 +20,13 @@ void llrtsp_ui_update_status(const char *source_name, const char *status_text,
 void llrtsp_ui_copy_text(const char *text);
 
 /*
- * Show or hide the privacy-safe inline UniFi Protect URL guidance in an open
- * Properties dialog. The pasted URL itself is never shown.
+ * Append or remove privacy-safe UniFi Protect URL guidance from the existing
+ * top information label in an open Properties dialog. The pasted URL itself
+ * is never shown.
  */
-void llrtsp_ui_update_unifi_hint(const char *source_name, bool visible);
+void llrtsp_ui_update_unifi_hint(const char *source_name,
+                                 const char *base_info_text,
+                                 const char *hint_text, bool visible);
 
 #ifdef __cplusplus
 }
