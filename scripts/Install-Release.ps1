@@ -7,6 +7,7 @@ $sourceRoot = Join-Path $packageRoot 'low-latency-rtsp'
 $dllSource = Join-Path $sourceRoot 'bin\64bit\low-latency-rtsp.dll'
 $localeSource = Join-Path $sourceRoot 'data\locale\en-US.ini'
 $updaterSource = Join-Path $sourceRoot 'data\updater\Install-Update.ps1'
+$runtimeSource = Join-Path $sourceRoot 'runtime'
 
 if (-not (Test-Path $dllSource)) {
     throw "Release package is missing $dllSource"
@@ -16,6 +17,9 @@ if (-not (Test-Path $localeSource)) {
 }
 if (-not (Test-Path $updaterSource)) {
     throw "Release package is missing $updaterSource"
+}
+if (-not (Test-Path (Join-Path $runtimeSource 'bin\gstreamer-1.0-0.dll'))) {
+    throw "Release package is missing the bundled GStreamer runtime."
 }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -48,6 +52,7 @@ $pluginRoot = Join-Path $env:ProgramData 'obs-studio\plugins\low-latency-rtsp'
 $binRoot = Join-Path $pluginRoot 'bin\64bit'
 $localeRoot = Join-Path $pluginRoot 'data\locale'
 $updaterRoot = Join-Path $pluginRoot 'data\updater'
+$runtimeRoot = Join-Path $pluginRoot 'runtime'
 
 New-Item -ItemType Directory -Path $binRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $localeRoot -Force | Out-Null
@@ -63,6 +68,10 @@ if (Test-Path $existingDll) {
 Copy-Item $dllSource $existingDll -Force
 Copy-Item $localeSource (Join-Path $localeRoot 'en-US.ini') -Force
 Copy-Item $updaterSource (Join-Path $updaterRoot 'Install-Update.ps1') -Force
+if (Test-Path $runtimeRoot) {
+    Remove-Item $runtimeRoot -Recurse -Force
+}
+Copy-Item $runtimeSource $pluginRoot -Recurse -Force
 
 Write-Host ''
 Write-Host 'Low Latency RTSP installed successfully.' -ForegroundColor Green

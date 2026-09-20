@@ -4,5 +4,19 @@ SPDX-License-Identifier: GPL-2.0-or-later
 This plugin is intended to be distributed under the GNU General Public License,
 version 2 or (at your option) any later version, consistent with OBS Studio/libobs.
 
-GStreamer is a separate project distributed primarily under LGPL-2.1-or-later.
-This source package does not redistribute GStreamer binaries.
+Windows release packages may include an unmodified private copy of the official
+GStreamer 1.28.7 MSVC x86_64 runtime so users do not need a separate GStreamer
+installation. GStreamer is a separate project distributed primarily under
+LGPL-2.1-or-later; individual bundled libraries and plugins may have their own
+compatible license notices.
+
+The bundled runtime is sourced from the official GStreamer Windows distribution:
+https://gstreamer.freedesktop.org/download/
+
+GStreamer source code and license information are available from the upstream
+project:
+https://gitlab.freedesktop.org/gstreamer/gstreamer
+https://gstreamer.freedesktop.org/documentation/frequently-asked-questions/licensing.html
+
+License and notice files shipped by the official GStreamer runtime are retained
+inside the bundled runtime where provided.

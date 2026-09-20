@@ -92,10 +92,58 @@ jobs:
 
           "GSTREAMER_1_0_ROOT_MSVC_X86_64=$root" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP 'gstreamer-runtime\1.0\msvc_x86_64'
+          $runtimeProcess = Start-Process -FilePath $installer -PassThru -ArgumentList @(
+            '/TYPE=runtime',
+            '/CURRENTUSER',
+            '/VERYSILENT',
+            '/NORESTART',
+            "/DIR=$runtimeRoot"
+          )
+
+          if (-not $runtimeProcess.WaitForExit(180000)) {
+            Stop-Process -Id $runtimeProcess.Id -Force -ErrorAction SilentlyContinue
+            throw 'GStreamer runtime installer timed out after 3 minutes.'
+          }
+
+          $runtimeExit = $runtimeProcess.ExitCode
+          if ($runtimeExit -notin @(0, 3010)) {
+            throw "GStreamer runtime installer exited with code $runtimeExit."
+          }
+
+          if (-not (Test-Path (Join-Path $runtimeRoot 'bin\gstreamer-1.0-0.dll'))) {
+            throw 'Private GStreamer runtime did not produce gstreamer-1.0-0.dll.'
+          }
+
+          "GSTREAMER_BUNDLED_RUNTIME_ROOT=$runtimeRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Build plugin
         shell: pwsh
         run: |
           .\scripts\Build-Windows.ps1 -GStreamerRoot $env:GSTREAMER_1_0_ROOT_MSVC_X86_64
+
+      - name: Stage private GStreamer runtime
+        shell: pwsh
+        run: |
+          $source = $env:GSTREAMER_BUNDLED_RUNTIME_ROOT
+          $dest = Join-Path (Resolve-Path 'dist') 'runtime'
+
+          if (-not $source -or -not (Test-Path $source)) {
+            throw 'Bundled GStreamer runtime source was not found.'
+          }
+
+          if (Test-Path $dest) {
+            Remove-Item $dest -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $dest -Force | Out-Null
+          Copy-Item (Join-Path $source '*') $dest -Recurse -Force
+
+          $core = Join-Path $dest 'bin\gstreamer-1.0-0.dll'
+          $plugins = Join-Path $dest 'lib\gstreamer-1.0'
+          if (-not (Test-Path $core) -or -not (Test-Path $plugins)) {
+            throw 'Staged GStreamer runtime is incomplete.'
+          }
 
       - name: Package Windows release
         id: package
@@ -115,6 +163,7 @@ jobs:
           Copy-Item 'dist\low-latency-rtsp.dll' (Join-Path $binRoot 'low-latency-rtsp.dll') -Force
           Copy-Item 'data\locale\en-US.ini' (Join-Path $localeRoot 'en-US.ini') -Force
           Copy-Item 'data\updater\Install-Update.ps1' (Join-Path $updaterRoot 'Install-Update.ps1') -Force
+          Copy-Item 'dist\runtime' $pluginRoot -Recurse -Force
           Copy-Item 'scripts\Install-Release.ps1' (Join-Path $packageRoot 'Install-Release.ps1') -Force
           Copy-Item 'README.md' (Join-Path $packageRoot 'README.md') -Force
           Copy-Item 'LICENSE' (Join-Path $packageRoot 'LICENSE') -Force
@@ -135,6 +184,40 @@ jobs:
           "zip=$zipPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "checksum=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+
+      - name: Build Windows installer
+        id: installer
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup compiler was not found at $iscc."
+          }
+
+          & $iscc "/DMyAppVersion=$version" 'installer\LowLatencyRTSP.iss'
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup compiler exited with code $LASTEXITCODE."
+          }
+
+          $installerName = "Low-Latency-RTSP-Setup-v$version.exe"
+          $installerPath = Join-Path (Resolve-Path 'dist') $installerName
+          if (-not (Test-Path $installerPath)) {
+            throw "Installer was not created at $installerPath."
+          }
+
+          $hash = (Get-FileHash $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksumPath = "$installerPath.sha256"
+          "$hash  $installerName" | Set-Content -Path $checksumPath -Encoding ASCII
+
+          "exe=$installerPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "checksum=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
       - name: Upload pull request build
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
@@ -143,6 +226,8 @@ jobs:
           path: |
             ${{ steps.package.outputs.zip }}
             ${{ steps.package.outputs.checksum }}
+            ${{ steps.installer.outputs.exe }}
+            ${{ steps.installer.outputs.checksum }}
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -162,6 +247,8 @@ jobs:
           gh release create $tag `
             '${{ steps.package.outputs.zip }}' `
             '${{ steps.package.outputs.checksum }}' `
+            '${{ steps.installer.outputs.exe }}' `
+            '${{ steps.installer.outputs.checksum }}' `
             --repo $env:GITHUB_REPOSITORY `
             --target $env:GITHUB_SHA `
             --title "Low Latency RTSP $tag" `

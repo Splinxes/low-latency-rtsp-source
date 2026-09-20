@@ -1,8 +1,12 @@
+<p align="center">
+  <img src="assets/low-latency-rtsp-logo.jpg" alt="Low Latency RTSP for OBS Studio" width="420">
+</p>
+
 # OBS - Low Latency RTSP Source
 
 A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
 
-**Current stable release: v0.5.2**
+**Current stable release: v0.5.4**
 
 ## What it does
 
@@ -73,21 +77,33 @@ If the GStreamer development files are missing, `scripts\Enable-GStreamer-Devel.
 
 ## Install
 
-Close OBS completely, then run:
+For releases that include the Windows installer, the recommended install path is:
 
-```powershell
-.\scripts\Install-Plugin.ps1
+```text
+Low-Latency-RTSP-Setup-vX.Y.Z.exe
 ```
 
-The plugin is installed under:
+Close OBS completely, run the installer, approve the Windows administrator prompt, and finish setup. The installer supports clean installs and in-place upgrades, registers the plugin in Windows Apps / Installed apps, and provides a normal uninstaller. The installer is currently unsigned, so Windows may show an **Unknown Publisher** warning.
+
+Release builds include a private GStreamer 1.28.7 runtime inside the plugin, so end users do **not** need to install GStreamer separately. The plugin prefers this bundled runtime and falls back to an external GStreamer installation only for development or legacy installs.
+
+The plugin files are installed under:
 
 ```text
 C:\ProgramData\obs-studio\plugins\low-latency-rtsp
 ```
 
+The installer metadata and uninstaller are kept separately under Program Files so the in-plugin self-updater can safely replace the plugin directory without breaking Windows uninstall support.
+
+For local development builds, close OBS completely and run:
+
+```powershell
+.\scripts\Install-Plugin.ps1
+```
+
 Restart OBS and add **Low Latency RTSP** from the Sources menu.
 
-To remove the plugin:
+Development installs can still be removed with:
 
 ```powershell
 .\scripts\Uninstall-Plugin.ps1
@@ -115,7 +131,7 @@ Do not post a live RTSP URL in an issue. See [SECURITY.md](SECURITY.md).
 
 The plugin currently focuses on Windows and TCP RTSP streams. H.264 and H.265 video are supported. Common camera audio formats are supported when audio is enabled.
 
-Future release-preparation work includes bundling a private GStreamer runtime and code signing. Release packaging and update automation are now part of the project.
+Release packaging, automated updates, the Windows installer, and a private bundled GStreamer runtime are part of the project. Code signing remains optional future work.
 
 ## License
 
