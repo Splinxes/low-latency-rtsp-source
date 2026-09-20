@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.1
+
+- Added a visible Windows self-update installation window with a staged progress bar while OBS closes, the package is validated/extracted, the current plugin is backed up, new files are installed, cleanup runs, and OBS is reopened.
+- The underlying elevated PowerShell host remains hidden; only the normal UAC prompt, the update progress window, and actionable error dialogs are shown.
+- Added RTSP Motion JPEG support for RFC 2435 `JPEG` RTP payloads through GStreamer `rtpjpegdepay`.
+- Added legacy MPEG-4 Part 2 RTSP video support for `MP4V-ES` through `rtpmp4vdepay` and `mpeg4videoparse`.
+- Added G.726 RTSP audio support for `G726`, `G726-16/24/32/40`, and `AAL2-G726-16/24/32/40` payload names through `rtpg726depay`.
+- Refactored RTSP codec routing into data-driven codec tables while preserving the existing H.264, H.265/HEVC, AAC, AAC-LATM, Opus, PCMU, and PCMA paths.
+- Windows CI now verifies that the bundled GStreamer runtime contains the new RTP depayloaders/parsers and at least one usable decoder for Motion JPEG, MPEG-4 Part 2, and G.726 before a release can be packaged.
+- Existing low-latency buffering, reconnect/watchdog, no-signal, privacy, and source-ID behavior are unchanged.
+
 ## v0.6.0
 
 - Added a normal Windows EXE installer built with Inno Setup for clean installs and in-place upgrades.

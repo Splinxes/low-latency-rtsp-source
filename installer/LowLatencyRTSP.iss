@@ -4,7 +4,7 @@
 
 #define MyAppName "Low Latency RTSP for OBS Studio"
 #define MyAppPublisher "Splinxes"
-#define MyAppURL "https://github.com/Splinxes/obs-low-latency-rtsp-source"
+#define MyAppURL "https://github.com/Splinxes/low-latency-rtsp-source"
 
 [Setup]
 AppId={{8E77351D-ED6B-447F-945F-1474F1B84284}

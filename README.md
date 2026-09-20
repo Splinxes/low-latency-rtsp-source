@@ -3,13 +3,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Splinxes/obs-low-latency-rtsp-source/releases/latest/download/Low-Latency-RTSP-Setup.exe">
+  <a href="https://github.com/Splinxes/low-latency-rtsp-source/releases/latest/download/Low-Latency-RTSP-Setup.exe">
     <img src="https://img.shields.io/badge/Download%20for%20Windows-.EXE-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Download for Windows">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Splinxes/obs-low-latency-rtsp-source/releases/latest">Latest Release</a>
+  <a href="https://github.com/Splinxes/low-latency-rtsp-source/releases/latest">Latest Release</a>
   ·
   <a href="CHANGELOG.md">Changelog</a>
   ·
@@ -20,7 +20,7 @@
 
 A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
 
-**Current stable release: v0.6.0**
+**Current stable release: v0.6.1**
 
 ## Quick install
 
@@ -36,11 +36,11 @@ The installer is currently unsigned, so Windows may show **Unknown Publisher** o
 
 ## Features
 
-- H.264/AVC and H.265/HEVC RTSP video auto-detection
+- H.264/AVC, H.265/HEVC, Motion JPEG, and MPEG-4 Part 2 RTSP video auto-detection
 - RTSP over TCP with Low Latency, Balanced, Stable, and Custom tuning
 - Hardware-decoder preference with the actual selected decoder reported in telemetry
 - Automatic software-decoder fallback if hardware startup fails
-- Optional RTSP audio with AAC, Opus, G.711 PCMU, and G.711 PCMA support
+- Optional RTSP audio with AAC, Opus, G.711 PCMU/PCMA, and G.726 support
 - Live connection state, decoder, codec, FPS, frame, dropped-frame, uptime, audio, and reconnect telemetry
 - Configurable signal-loss display: Transparent, Black, Reconnecting..., or No Signal
 - Manual **Reconnect Now**
@@ -53,18 +53,33 @@ The installer is currently unsigned, so Windows may show **Unknown Publisher** o
 
 The OBS source ID remains `low_latency_rtsp_gstreamer`, so existing source instances are preserved across plugin upgrades.
 
-## What's new in v0.6.0
+## Supported RTSP media
 
-v0.6.0 is the first all-in-one Windows installer release.
+| Media | RTP / codec | Status |
+| --- | --- | --- |
+| Video | H.264 / AVC | Supported |
+| Video | H.265 / HEVC | Supported |
+| Video | Motion JPEG (`JPEG`, RFC 2435) | Supported |
+| Video | MPEG-4 Part 2 (`MP4V-ES`) | Supported |
+| Audio | AAC / MPEG4-GENERIC | Supported |
+| Audio | AAC-LATM / MP4A-LATM | Supported |
+| Audio | Opus | Supported |
+| Audio | G.711 μ-law / PCMU | Supported |
+| Audio | G.711 A-law / PCMA | Supported |
+| Audio | G.726 16/24/32/40 kbps and AAL2 variants | Supported |
 
-- Added the normal `.exe` installer built with Inno Setup
-- Bundled GStreamer 1.28.7 with the release, eliminating the separate GStreamer install for end users
-- Added Windows Apps / Installed apps uninstall support
-- Added the project logo and installer-first GitHub documentation
-- Raised the self-updater download safety ceiling from 128 MB to 512 MB for the larger self-contained package
-- Hid the updater PowerShell console while preserving the normal Windows UAC prompt and updater error dialogs
-- Corrected runtime version reporting
-- Validated the installer on a clean Windows PC with OBS installed and no separate GStreamer installation; the source installed, loaded, and streamed successfully
+H.264/H.265 and the installer path have been exercised on real hardware. The v0.6.1 compatibility additions are also gated by CI checks against the exact bundled GStreamer runtime so a release fails if the required codec elements are missing.
+
+## What's new in v0.6.1
+
+v0.6.1 expands camera compatibility and makes self-updates much clearer.
+
+- Added a visible installation progress window after UAC while the updater safely closes OBS, validates and extracts the package, backs up the current plugin, installs the new files, cleans up, and reopens OBS
+- Kept the underlying elevated PowerShell console hidden
+- Added Motion JPEG RTSP video support for standard `JPEG` RTP payloads
+- Added legacy MPEG-4 Part 2 RTSP video support for `MP4V-ES`
+- Added G.726 audio support, including the common bitrate-specific and AAL2 payload names
+- Added Windows CI checks that verify the bundled GStreamer runtime contains the required depayloaders, parser, and decoders before packaging
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
@@ -80,7 +95,9 @@ If video disappears, the plugin clears the stale live frame and switches to the 
 
 The source Properties window includes **Update Plugin**.
 
-When a newer GitHub Release is available, the Windows updater:
+When a newer GitHub Release is available, OBS first shows download/verification progress. After you choose **Install & Restart OBS** and approve UAC, a dedicated installation progress window remains visible while the plugin is replaced and OBS is restarted.
+
+The Windows updater:
 
 - requests the exact versioned Windows ZIP and its published SHA-256 file
 - only accepts release assets from this repository
@@ -89,7 +106,7 @@ When a newer GitHub Release is available, the Windows updater:
 - backs up the existing plugin before replacement
 - restores the backup if replacement fails
 - reopens OBS after a successful update
-- launches its elevated PowerShell helper hidden while still showing the normal Windows UAC prompt
+- keeps its elevated PowerShell host hidden while showing a visible installation progress bar and the normal Windows UAC prompt
 - enforces a 512 MB update-download safety limit
 
 The self-updater replaces the plugin directory, including its private GStreamer runtime.
@@ -135,14 +152,14 @@ Do not post a live RTSP URL in an issue. See [SECURITY.md](SECURITY.md).
 
 ## Tested environment
 
-v0.6.0 has been tested with:
+The current release line has been tested with:
 
 - Windows 11 x64
 - OBS Studio 32.2.2
 - bundled GStreamer 1.28.7 MSVC x86_64
 - H.264 RTSP at 2688×1512 / 30 FPS
 - Direct3D 12 hardware decoding through GStreamer (`d3d12h264dec`)
-- a clean Windows PC with only OBS installed before running the v0.6.0 installer
+- a clean Windows PC with only OBS installed before running the all-in-one installer
 
 Other RTSP cameras, codecs, decoders, Windows versions, and OBS versions may work, but the list above is the currently validated environment.
 
@@ -211,7 +228,7 @@ Development installs can be removed with:
 
 ## Current scope
 
-The project currently focuses on Windows x64 and TCP RTSP streams. H.264 and H.265 video are supported, with common camera audio formats available when audio is enabled.
+The project currently focuses on Windows x64 and RTSP over TCP. Supported video includes H.264, H.265/HEVC, Motion JPEG, and legacy MPEG-4 Part 2. Optional audio includes AAC, Opus, G.711, and G.726.
 
 The Windows installer, private GStreamer runtime, GitHub release packaging, SHA-256 checksums, and verified self-updater are all part of the current release. Code signing is not currently used.
 
