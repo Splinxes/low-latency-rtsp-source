@@ -1,6 +1,13 @@
 # Changelog
 
-## v0.5.4 (development)
+## v0.5.5 (development)
+
+- Hide the elevated Windows PowerShell console used by the self-updater so normal updates feel native to OBS.
+- Keep the Windows UAC elevation prompt visible, and preserve updater error message boxes when an update cannot complete.
+- No RTSP engine, decoder, audio, reconnect, watchdog, source settings, or no-signal behavior changes.
+- Because the currently installed version launches the updater, the first update from v0.5.4 to v0.5.5 may still show the console. Hidden-console behavior is validated by updating from v0.5.5 to a later release.
+
+## v0.5.4
 
 - Validation release for the v0.5.3 Windows self-updater.
 - No RTSP engine, decoder, audio, reconnect, watchdog, source settings, or no-signal behavior changes.
