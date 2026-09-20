@@ -81,6 +81,8 @@ Low-Latency-RTSP-Setup-vX.Y.Z.exe
 
 Close OBS completely, run the installer, approve the Windows administrator prompt, and finish setup. The installer supports clean installs and in-place upgrades, registers the plugin in Windows Apps / Installed apps, and provides a normal uninstaller. The installer is currently unsigned, so Windows may show an **Unknown Publisher** warning.
 
+Release builds include a private GStreamer 1.28.7 runtime inside the plugin, so end users do **not** need to install GStreamer separately. The plugin prefers this bundled runtime and falls back to an external GStreamer installation only for development or legacy installs.
+
 The plugin files are installed under:
 
 ```text
@@ -125,7 +127,7 @@ Do not post a live RTSP URL in an issue. See [SECURITY.md](SECURITY.md).
 
 The plugin currently focuses on Windows and TCP RTSP streams. H.264 and H.265 video are supported. Common camera audio formats are supported when audio is enabled.
 
-Future release-preparation work includes bundling a private GStreamer runtime and code signing. Release packaging and update automation are now part of the project.
+Release packaging, automated updates, the Windows installer, and a private bundled GStreamer runtime are part of the project. Code signing remains optional future work.
 
 ## License
 
