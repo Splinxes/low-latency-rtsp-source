@@ -422,34 +422,6 @@ extern "C" void llrtsp_ui_open_url(const char *url)
         Qt::QueuedConnection);
 }
 
-extern "C" void llrtsp_ui_check_for_update(const char *current_version)
-{
-    if (!qApp || !current_version || !*current_version)
-        return;
-
-    const QString currentVersion = QString::fromUtf8(current_version);
-
-#ifdef _WIN32
-    QApplication *application = qApp;
-    std::thread([application, currentVersion]() {
-        const UpdateCheckResult result = fetch_latest_release();
-
-        if (!application)
-            return;
-
-        QMetaObject::invokeMethod(
-            application,
-            [currentVersion, result]() {
-                present_update_check_result(currentVersion, result);
-            },
-            Qt::QueuedConnection);
-    }).detach();
-#else
-    llrtsp_ui_open_url(
-        "https://github.com/Splinxes/obs-low-latency-rtsp-source/releases");
-#endif
-}
-
 extern "C" void llrtsp_ui_update_unifi_hint(const char *source_name,
                                              const char *base_info_text,
                                              const char *hint_text,
