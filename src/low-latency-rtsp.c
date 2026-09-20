@@ -33,7 +33,7 @@
 #define PROP_RESET_STATS "reset_stats"
 #define PROP_RECONNECT_NOW "reconnect_now"
 #define PROP_COPY_DIAGNOSTICS "copy_diagnostics"
-#define PROP_GITHUB_UPDATES "github_updates"
+#define PROP_UPDATE_PLUGIN "update_plugin"
 #define PROP_VERSION "version_info"
 
 #define LLRTSP_VERSION "0.5.1"
@@ -854,6 +854,12 @@ static void update_property_visibility(obs_properties_t *props, gint preset,
     obs_property_t *audio_mode = obs_properties_get(props, SETTING_AUDIO_MODE);
     obs_property_t *audio_delay = obs_properties_get(props, SETTING_AUDIO_DELAY_MS);
     obs_property_t *version = obs_properties_get(props, PROP_VERSION);
+    obs_property_t *copy_diagnostics =
+        obs_properties_get(props, PROP_COPY_DIAGNOSTICS);
+    obs_property_t *refresh_status =
+        obs_properties_get(props, PROP_REFRESH_STATUS);
+    obs_property_t *reset_stats =
+        obs_properties_get(props, PROP_RESET_STATS);
 
     if (latency)
         obs_property_set_visible(latency, custom);
@@ -869,6 +875,12 @@ static void update_property_visibility(obs_properties_t *props, gint preset,
         obs_property_set_visible(audio_delay, enable_audio);
     if (version)
         obs_property_set_visible(version, show_advanced);
+    if (copy_diagnostics)
+        obs_property_set_visible(copy_diagnostics, show_advanced);
+    if (refresh_status)
+        obs_property_set_visible(refresh_status, show_advanced);
+    if (reset_stats)
+        obs_property_set_visible(reset_stats, show_advanced);
 }
 
 static gboolean looks_like_unifi_protect_secure_url(const char *url)
@@ -1153,7 +1165,7 @@ static bool copy_diagnostics_clicked(obs_properties_t *props,
     return false;
 }
 
-static bool github_updates_clicked(obs_properties_t *props,
+static bool update_plugin_clicked(obs_properties_t *props,
                                    obs_property_t *property, void *data)
 {
     UNUSED_PARAMETER(props);
@@ -2619,9 +2631,6 @@ static obs_properties_t *llrtsp_properties(void *data)
         current_audio = ctx->enable_audio;
         g_mutex_unlock(&ctx->settings_mutex);
     }
-    update_property_visibility(props, current_preset, current_advanced,
-                               current_audio);
-
     obs_property_t *status = obs_properties_add_text(
         props, PROP_STATUS, "", OBS_TEXT_INFO);
     obs_property_text_set_info_word_wrap(status, true);
@@ -2630,18 +2639,25 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_properties_add_button2(props, PROP_RECONNECT_NOW,
                                obs_module_text("ReconnectNow"),
                                reconnect_now_clicked, ctx);
+    obs_properties_add_button2(props, PROP_UPDATE_PLUGIN,
+                               obs_module_text("UpdatePlugin"),
+                               update_plugin_clicked, ctx);
     obs_properties_add_button2(props, PROP_COPY_DIAGNOSTICS,
                                obs_module_text("CopyDiagnostics"),
                                copy_diagnostics_clicked, ctx);
-    obs_properties_add_button2(props, PROP_GITHUB_UPDATES,
-                               obs_module_text("GitHubUpdates"),
-                               github_updates_clicked, ctx);
     obs_properties_add_button2(props, PROP_REFRESH_STATUS,
                                obs_module_text("RefreshStatus"),
                                refresh_status_clicked, ctx);
     obs_properties_add_button2(props, PROP_RESET_STATS,
                                obs_module_text("ResetStats"),
                                reset_stats_clicked, ctx);
+
+    /*
+     * Run visibility after every property/button has been created so the
+     * initial Properties view matches the saved Advanced setting.
+     */
+    update_property_visibility(props, current_preset, current_advanced,
+                               current_audio);
 
     return props;
 }
