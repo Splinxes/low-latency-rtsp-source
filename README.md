@@ -2,9 +2,7 @@
 
 A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
 
-**Current stable baseline: v0.4.0**
-
-**Development branch (`dev/obs32-sdk`): v0.5.0 — OBS 32.2.2 SDK alignment**
+**Current stable release: v0.5.1**
 
 ## What it does
 
@@ -21,23 +19,21 @@ A Windows OBS Studio source plugin built around GStreamer for very low-latency R
 
 The source ID remains `low_latency_rtsp_gstreamer`, so existing OBS source instances are preserved across plugin upgrades.
 
-## v0.4.0 reliability changes
+## v0.5.1 highlights
 
-v0.4.0 adds the stalled-stream watchdog, first-frame timeout, adaptive reconnect backoff, live reconnect countdown, simplified connection errors, Copy Diagnostics, and an in-UI version line. The validated v0.3.9 video/audio path is otherwise unchanged.
+v0.5.1 targets OBS Studio 32.2.2 and adds UniFi Protect URL guidance, libobs async unbuffered mode for lower first-add latency, cleaner Properties controls, and fixes for multiple Low Latency RTSP sources being open at the same time.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## Tested environment
 
-The current baseline has been tested on:
+The current release has been tested on:
 
 - Windows 11 x64
 - OBS Studio 32.2.2
 - GStreamer 1.28.7 MSVC x86_64
 - H.264 RTSP at 2688x1512 / 30 FPS
 - Direct3D 12 hardware decode through GStreamer (`d3d12h264dec`)
-
-The `dev/obs32-sdk` branch builds against the OBS Studio 32.2.2 SDK and the matching OBS dependency/Qt packages. The RTSP video/audio engine is intentionally unchanged from the validated v0.4.0 baseline.
 
 ## Requirements
 
@@ -105,7 +101,7 @@ The plugin intentionally avoids allowing a dead connection to look live. When vi
 
 RTSP URLs may contain usernames, passwords, stream IDs, or access tokens. The plugin:
 
-- masks the RTSP URL field in OBS
+- shows the URL only while configuring a brand-new source, then masks the saved URL on later Properties opens
 - does not put the configured RTSP URL into plugin logs or status text
 - omits the RTSP URL and credentials from Copy Diagnostics
 
