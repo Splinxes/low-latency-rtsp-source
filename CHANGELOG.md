@@ -1,6 +1,14 @@
 # Changelog
 
-## v0.5.1 (development)
+## v0.5.2 (development)
+
+- Reworked `Update Plugin` into a real version check against the public GitHub Releases API instead of blindly opening the releases page.
+- The update check reports when the installed version is current and offers to open the exact latest release when a newer version is available.
+- Added a Windows GitHub Actions build/release workflow. Pull requests build a release package; a new version merged to `main` automatically publishes a versioned GitHub Release if that tag does not already exist.
+- Added a release ZIP layout with the OBS plugin folder, an elevation-aware release installer, and a SHA-256 checksum.
+- No changes to the RTSP streaming, decoder, audio, reconnect, watchdog, or no-signal engine.
+
+## v0.5.1
 
 - Fixed multiple-source Properties cross-talk: source names such as `Low Latency RTSP` no longer match the window for `Low Latency RTSP 2`. Live status and UniFi guidance now update only the intended source dialog.
 - Brand-new sources now show the RTSP URL field in plain text so a pasted URL can be corrected before closing Properties. Once a URL has been saved, future Properties sessions return to the masked password-style field.
@@ -17,7 +25,7 @@
 - The plugin does not rewrite the URL automatically.
 - No changes to the streaming, decoder, audio, reconnect, watchdog, or no-signal engine.
 
-## v0.5.0 (development)
+## v0.5.0
 
 - Aligned the Windows build target with the OBS Studio 32.2.2 SDK.
 - Updated the pinned OBS dependency and Qt packages to the versions used by OBS Studio 32.2.2.

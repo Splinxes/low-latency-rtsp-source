@@ -1,0 +1,141 @@
+name: Windows Build and Release
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Read plugin version
+        id: version
+        shell: pwsh
+        run: |
+          $buildspec = Get-Content buildspec.json -Raw | ConvertFrom-Json
+          $version = [string]$buildspec.version
+          if (-not $version) {
+            throw 'buildspec.json does not contain a version.'
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Install GStreamer 1.28.7 development package
+        shell: pwsh
+        run: |
+          $url = 'https://gstreamer.freedesktop.org/data/pkg/windows/1.28.7/msvc/gstreamer-1.0-msvc-x86_64-1.28.7.exe'
+          $installer = Join-Path $env:RUNNER_TEMP 'gstreamer-1.28.7.exe'
+          $root = Join-Path $env:RUNNER_TEMP 'gstreamer\1.0\msvc_x86_64'
+
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          $process = Start-Process -FilePath $installer -PassThru -ArgumentList @(
+            '/TYPE=devel',
+            '/CURRENTUSER',
+            '/VERYSILENT',
+            '/NORESTART',
+            "/DIR=$root"
+          )
+
+          if (-not $process.WaitForExit(180000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw 'GStreamer installer timed out after 3 minutes.'
+          }
+
+          $installerExit = $process.ExitCode
+          if ($installerExit -notin @(0, 3010)) {
+            throw "GStreamer installer exited with code $installerExit."
+          }
+
+          if (-not (Test-Path (Join-Path $root 'bin\gst-launch-1.0.exe'))) {
+            throw 'GStreamer installation did not produce gst-launch-1.0.exe.'
+          }
+
+          "GSTREAMER_1_0_ROOT_MSVC_X86_64=$root" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build plugin
+        shell: pwsh
+        run: |
+          .\scripts\Build-Windows.ps1 -GStreamerRoot $env:GSTREAMER_1_0_ROOT_MSVC_X86_64
+
+      - name: Package Windows release
+        id: package
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $packageRoot = Join-Path $env:RUNNER_TEMP 'release-package'
+          $pluginRoot = Join-Path $packageRoot 'low-latency-rtsp'
+          $binRoot = Join-Path $pluginRoot 'bin\64bit'
+          $localeRoot = Join-Path $pluginRoot 'data\locale'
+
+          New-Item -ItemType Directory -Path $binRoot -Force | Out-Null
+          New-Item -ItemType Directory -Path $localeRoot -Force | Out-Null
+
+          Copy-Item 'dist\low-latency-rtsp.dll' (Join-Path $binRoot 'low-latency-rtsp.dll') -Force
+          Copy-Item 'data\locale\en-US.ini' (Join-Path $localeRoot 'en-US.ini') -Force
+          Copy-Item 'scripts\Install-Release.ps1' (Join-Path $packageRoot 'Install-Release.ps1') -Force
+          Copy-Item 'README.md' (Join-Path $packageRoot 'README.md') -Force
+          Copy-Item 'LICENSE' (Join-Path $packageRoot 'LICENSE') -Force
+          Copy-Item 'LICENSE-NOTICE.txt' (Join-Path $packageRoot 'LICENSE-NOTICE.txt') -Force
+
+          $zipName = "low-latency-rtsp-v$version-windows-x64.zip"
+          $zipPath = Join-Path (Resolve-Path 'dist') $zipName
+          if (Test-Path $zipPath) {
+            Remove-Item $zipPath -Force
+          }
+
+          Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $zipPath -CompressionLevel Optimal
+
+          $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksumPath = "$zipPath.sha256"
+          "$hash  $zipName" | Set-Content -Path $checksumPath -Encoding ASCII
+
+          "zip=$zipPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "checksum=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload pull request build
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: low-latency-rtsp-v${{ steps.version.outputs.version }}-windows-x64
+          path: |
+            ${{ steps.package.outputs.zip }}
+            ${{ steps.package.outputs.checksum }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ steps.version.outputs.tag }}'
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists; nothing to publish."
+            exit 0
+          }
+
+          gh release create $tag `
+            '${{ steps.package.outputs.zip }}' `
+            '${{ steps.package.outputs.checksum }}' `
+            --repo $env:GITHUB_REPOSITORY `
+            --target $env:GITHUB_SHA `
+            --title "Low Latency RTSP $tag" `
+            --generate-notes

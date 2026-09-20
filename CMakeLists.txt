@@ -36,6 +36,10 @@ pkg_check_modules(
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs PkgConfig::GSTREAMER)
 
+if(WIN32)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE winhttp)
+endif()
+
 # On Windows, OBS loads plugins with a restricted DLL search path. Delay-load
 # the GStreamer runtime so the module itself can load first; obs_module_load()
 # then points Windows at the official GStreamer runtime before gst_init_check().
