@@ -16,8 +16,8 @@ find_package(libobs REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 if(ENABLE_QT)
-  find_package(Qt6 COMPONENTS Widgets Core Network REQUIRED)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
+  find_package(Qt6 COMPONENTS Widgets Core REQUIRED)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
   set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON
@@ -35,6 +35,10 @@ pkg_check_modules(
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs PkgConfig::GSTREAMER)
+
+if(WIN32)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE winhttp)
+endif()
 
 # On Windows, OBS loads plugins with a restricted DLL search path. Delay-load
 # the GStreamer runtime so the module itself can load first; obs_module_load()
