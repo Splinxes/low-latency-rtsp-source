@@ -38,7 +38,7 @@
   },
   "name": "low-latency-rtsp",
   "displayName": "OBS - Low Latency RTSP Source",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "author": "Splinxes",
   "website": "https://github.com/Splinxes/obs-low-latency-rtsp-source",
   "email": ""
