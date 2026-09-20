@@ -150,7 +150,7 @@ static HttpResult fetch_https_url(const QUrl &url)
     const std::wstring request_target = target.toStdWString();
 
     HINTERNET session = WinHttpOpen(
-        L"OBS-Low-Latency-RTSP-Updater/0.6.0",
+        L"OBS-Low-Latency-RTSP-Updater/0.6.1",
         WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
         WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) {
