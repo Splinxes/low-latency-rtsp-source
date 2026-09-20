@@ -4,7 +4,7 @@
 
 RTSP URLs can contain usernames, passwords, stream IDs, and access tokens. Do not include a live RTSP URL in bug reports, screenshots, logs, or example configuration files.
 
-The plugin intentionally masks the RTSP URL in OBS and omits it from Copy Diagnostics output and plugin status text.
+The plugin shows the RTSP URL while a brand-new source is being configured so it can be edited, then masks the saved URL on later Properties opens. Copy Diagnostics and plugin status text intentionally omit the configured URL.
 
 ## Reporting a security issue
 
