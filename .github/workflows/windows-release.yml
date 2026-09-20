@@ -135,6 +135,40 @@ jobs:
           "zip=$zipPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "checksum=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+
+      - name: Build Windows installer
+        id: installer
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup compiler was not found at $iscc."
+          }
+
+          & $iscc "/DMyAppVersion=$version" 'installer\LowLatencyRTSP.iss'
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup compiler exited with code $LASTEXITCODE."
+          }
+
+          $installerName = "Low-Latency-RTSP-Setup-v$version.exe"
+          $installerPath = Join-Path (Resolve-Path 'dist') $installerName
+          if (-not (Test-Path $installerPath)) {
+            throw "Installer was not created at $installerPath."
+          }
+
+          $hash = (Get-FileHash $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksumPath = "$installerPath.sha256"
+          "$hash  $installerName" | Set-Content -Path $checksumPath -Encoding ASCII
+
+          "exe=$installerPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "checksum=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
       - name: Upload pull request build
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
@@ -143,6 +177,8 @@ jobs:
           path: |
             ${{ steps.package.outputs.zip }}
             ${{ steps.package.outputs.checksum }}
+            ${{ steps.installer.outputs.exe }}
+            ${{ steps.installer.outputs.checksum }}
           if-no-files-found: error
 
       - name: Publish GitHub Release
