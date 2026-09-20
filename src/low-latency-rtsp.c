@@ -33,6 +33,7 @@
 #define PROP_RESET_STATS "reset_stats"
 #define PROP_RECONNECT_NOW "reconnect_now"
 #define PROP_COPY_DIAGNOSTICS "copy_diagnostics"
+#define PROP_GITHUB_UPDATES "github_updates"
 #define PROP_VERSION "version_info"
 
 #define LLRTSP_VERSION "0.5.1"
@@ -1128,6 +1129,18 @@ static bool copy_diagnostics_clicked(obs_properties_t *props,
     char diagnostics[2048];
     build_diagnostics_text(ctx, diagnostics, sizeof(diagnostics));
     llrtsp_ui_copy_text(diagnostics);
+    return false;
+}
+
+static bool github_updates_clicked(obs_properties_t *props,
+                                   obs_property_t *property, void *data)
+{
+    UNUSED_PARAMETER(props);
+    UNUSED_PARAMETER(property);
+    UNUSED_PARAMETER(data);
+
+    llrtsp_ui_open_url(
+        "https://github.com/Splinxes/obs-low-latency-rtsp-source/releases");
     return false;
 }
 
@@ -2579,6 +2592,9 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_properties_add_button2(props, PROP_COPY_DIAGNOSTICS,
                                obs_module_text("CopyDiagnostics"),
                                copy_diagnostics_clicked, ctx);
+    obs_properties_add_button2(props, PROP_GITHUB_UPDATES,
+                               obs_module_text("GitHubUpdates"),
+                               github_updates_clicked, ctx);
     obs_properties_add_button2(props, PROP_REFRESH_STATUS,
                                obs_module_text("RefreshStatus"),
                                refresh_status_clicked, ctx);
