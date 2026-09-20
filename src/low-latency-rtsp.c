@@ -28,6 +28,7 @@
 #define SETTING_NO_SIGNAL_MODE "no_signal_mode"
 
 #define PROP_INFO "plugin_info"
+#define PROP_UNIFI_HINT "unifi_rtsp_hint"
 #define PROP_STATUS "status_info"
 #define PROP_REFRESH_STATUS "refresh_status"
 #define PROP_RESET_STATS "reset_stats"
@@ -2358,8 +2359,10 @@ static void llrtsp_update(void *data, obs_data_t *settings)
      * Trigger only when the URL actually changes to avoid repeated popups from
      * unrelated setting updates.
      */
-    if (url_changed && looks_like_unifi_protect_secure_url(url))
-        llrtsp_ui_show_unifi_rtsp_hint(obs_source_get_name(ctx->source));
+    if (url_changed)
+        llrtsp_ui_update_unifi_hint(
+            obs_source_get_name(ctx->source),
+            looks_like_unifi_protect_secure_url(url));
 
     obs_source_set_audio_active(ctx->source, enable_audio);
     g_atomic_int_set(&ctx->restart_requested, 1);
@@ -2453,6 +2456,20 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_property_t *url = obs_properties_add_text(
         props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
+
+    obs_property_t *unifi_hint = obs_properties_add_text(
+        props, PROP_UNIFI_HINT, obs_module_text("UniFiRTSPHint"),
+        OBS_TEXT_INFO);
+    obs_property_text_set_info_type(unifi_hint, OBS_TEXT_INFO_WARNING);
+    obs_property_text_set_info_word_wrap(unifi_hint, true);
+
+    gboolean show_unifi_hint = FALSE;
+    if (ctx) {
+        g_mutex_lock(&ctx->settings_mutex);
+        show_unifi_hint = looks_like_unifi_protect_secure_url(ctx->url);
+        g_mutex_unlock(&ctx->settings_mutex);
+    }
+    obs_property_set_visible(unifi_hint, show_unifi_hint);
 
     obs_property_t *preset = obs_properties_add_list(
         props, SETTING_PRESET, obs_module_text("Preset"),
