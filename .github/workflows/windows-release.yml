@@ -117,6 +117,68 @@ jobs:
 
           "GSTREAMER_BUNDLED_RUNTIME_ROOT=$runtimeRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+      - name: Validate bundled RTSP codec elements
+        shell: pwsh
+        run: |
+          $runtimeRoot = $env:GSTREAMER_BUNDLED_RUNTIME_ROOT
+          $inspect = Join-Path $runtimeRoot 'bin\gst-inspect-1.0.exe'
+
+          if (-not (Test-Path $inspect)) {
+            $inspect = Join-Path $env:GSTREAMER_1_0_ROOT_MSVC_X86_64 'bin\gst-inspect-1.0.exe'
+          }
+
+          if (-not (Test-Path $inspect)) {
+            throw 'gst-inspect-1.0.exe was not found.'
+          }
+
+          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = Join-Path $runtimeRoot 'lib\gstreamer-1.0'
+          $env:GST_PLUGIN_PATH_1_0 = $env:GST_PLUGIN_SYSTEM_PATH_1_0
+          $env:PATH = (Join-Path $runtimeRoot 'bin') + ';' + $env:PATH
+
+          function Test-GstElement {
+            param([string]$Name)
+            & $inspect $Name *> $null
+            return $LASTEXITCODE -eq 0
+          }
+
+          $required = @(
+            'decodebin',
+            'rtph264depay',
+            'h264parse',
+            'rtph265depay',
+            'h265parse',
+            'rtpjpegdepay',
+            'rtpmp4vdepay',
+            'mpeg4videoparse',
+            'rtpg726depay'
+          )
+
+          foreach ($element in $required) {
+            if (-not (Test-GstElement $element)) {
+              throw "Bundled GStreamer runtime is missing required element: $element"
+            }
+          }
+
+          $decoderGroups = @(
+            @{ Name = 'Motion JPEG'; Candidates = @('jpegdec', 'avdec_mjpeg') },
+            @{ Name = 'MPEG-4 Part 2'; Candidates = @('avdec_mpeg4') },
+            @{ Name = 'G.726'; Candidates = @('avdec_g726', 'avdec_g726le') }
+          )
+
+          foreach ($group in $decoderGroups) {
+            $found = $false
+            foreach ($candidate in $group.Candidates) {
+              if (Test-GstElement $candidate) {
+                $found = $true
+                break
+              }
+            }
+
+            if (-not $found) {
+              throw "Bundled GStreamer runtime has no decoder for $($group.Name)."
+            }
+          }
+
       - name: Build plugin
         shell: pwsh
         run: |
