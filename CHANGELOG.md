@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.5.1 (development)
+
+- Fixed multiple-source Properties cross-talk: source names such as `Low Latency RTSP` no longer match the window for `Low Latency RTSP 2`. Live status and UniFi guidance now update only the intended source dialog.
+- Brand-new sources now show the RTSP URL field in plain text so a pasted URL can be corrected before closing Properties. Once a URL has been saved, future Properties sessions return to the masked password-style field.
+- Disabled libobs async video buffering for this low-latency source with `obs_source_set_async_unbuffered(..., true)`. OBS now keeps the newest delivered frame instead of allowing its async source queue to retain older frames, targeting the small first-add latency that disappears only after a full OBS restart.
+- Moved `Copy Diagnostics`, `Refresh Stats`, and `Reset Stats` under Advanced Settings to keep the default Properties view cleaner.
+- Renamed `GitHub / Updates` to `Update Plugin`; it still opens the project's GitHub Releases page.
+- The UniFi guidance now latches once a Protect secure URL is detected, so temporary partial edits (such as deleting a port digit) do not make the warning disappear. It clears only when the URL is fully converted or the field is cleared.
+- Keeps the UniFi guidance visible through partial conversions and hides it only after all three fixes are complete: `rtsps://` -> `rtsp://`, `:7441` -> `:7447`, and removal of `enableSrtp`.
+- Added a `GitHub / Updates` button to the source Properties window that opens the project's GitHub Releases page in the default browser.
+- Added inline UniFi Protect URL guidance when a secure `rtsps://` link using port 7441 or `enableSrtp` is entered in the RTSP URL field.
+- The guidance appears inside the existing top information area of the Properties window instead of using a modal popup, so editing the URL is never interrupted.
+- The hint explains the standard Protect conversion: `rtsps://` to `rtsp://`, port `7441` to `7447`, and removal of `?enableSrtp`, while keeping the stream ID/path unchanged.
+- The inline warning never displays or logs the pasted RTSP URL or credentials.
+- The plugin does not rewrite the URL automatically.
+- No changes to the streaming, decoder, audio, reconnect, watchdog, or no-signal engine.
+
 ## v0.5.0 (development)
 
 - Aligned the Windows build target with the OBS Studio 32.2.2 SDK.

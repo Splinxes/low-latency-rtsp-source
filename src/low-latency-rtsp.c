@@ -33,9 +33,10 @@
 #define PROP_RESET_STATS "reset_stats"
 #define PROP_RECONNECT_NOW "reconnect_now"
 #define PROP_COPY_DIAGNOSTICS "copy_diagnostics"
+#define PROP_UPDATE_PLUGIN "update_plugin"
 #define PROP_VERSION "version_info"
 
-#define LLRTSP_VERSION "0.5.0"
+#define LLRTSP_VERSION "0.5.1"
 
 #define PRESET_LOW_LATENCY 0
 #define PRESET_BALANCED 1
@@ -97,6 +98,10 @@ struct llrtsp_source {
     gint audio_delay_ms;
     gboolean show_advanced;
     gint no_signal_mode;
+
+    /* Once a Protect secure URL is detected, keep the guidance visible
+     * throughout partial edits until the conversion is fully complete. */
+    gboolean unifi_hint_latched;
 
     gint stop_requested;
     gint restart_requested;
@@ -849,6 +854,12 @@ static void update_property_visibility(obs_properties_t *props, gint preset,
     obs_property_t *audio_mode = obs_properties_get(props, SETTING_AUDIO_MODE);
     obs_property_t *audio_delay = obs_properties_get(props, SETTING_AUDIO_DELAY_MS);
     obs_property_t *version = obs_properties_get(props, PROP_VERSION);
+    obs_property_t *copy_diagnostics =
+        obs_properties_get(props, PROP_COPY_DIAGNOSTICS);
+    obs_property_t *refresh_status =
+        obs_properties_get(props, PROP_REFRESH_STATUS);
+    obs_property_t *reset_stats =
+        obs_properties_get(props, PROP_RESET_STATS);
 
     if (latency)
         obs_property_set_visible(latency, custom);
@@ -864,6 +875,46 @@ static void update_property_visibility(obs_properties_t *props, gint preset,
         obs_property_set_visible(audio_delay, enable_audio);
     if (version)
         obs_property_set_visible(version, show_advanced);
+    if (copy_diagnostics)
+        obs_property_set_visible(copy_diagnostics, show_advanced);
+    if (refresh_status)
+        obs_property_set_visible(refresh_status, show_advanced);
+    if (reset_stats)
+        obs_property_set_visible(reset_stats, show_advanced);
+}
+
+static gboolean looks_like_unifi_protect_secure_url(const char *url)
+{
+    if (!url || !*url)
+        return FALSE;
+
+    const gboolean secure_scheme =
+        g_ascii_strncasecmp(url, "rtsps://", 8) == 0;
+    const gboolean secure_port =
+        g_strrstr(url, ":7441/") != NULL ||
+        g_strrstr(url, ":7441?") != NULL;
+    const gboolean srtp_query =
+        g_strrstr(url, "?enableSrtp") != NULL ||
+        g_strrstr(url, "&enableSrtp") != NULL;
+
+    return secure_scheme && (secure_port || srtp_query);
+}
+
+static gboolean unifi_protect_conversion_complete(const char *url)
+{
+    if (!url || !*url)
+        return FALSE;
+
+    const gboolean normal_scheme =
+        g_ascii_strncasecmp(url, "rtsp://", 7) == 0;
+    const gboolean normal_port =
+        g_strrstr(url, ":7447/") != NULL ||
+        g_strrstr(url, ":7447?") != NULL;
+    const gboolean srtp_query =
+        g_strrstr(url, "?enableSrtp") != NULL ||
+        g_strrstr(url, "&enableSrtp") != NULL;
+
+    return normal_scheme && normal_port && !srtp_query;
 }
 
 static bool properties_modified(void *priv, obs_properties_t *props,
@@ -1111,6 +1162,18 @@ static bool copy_diagnostics_clicked(obs_properties_t *props,
     char diagnostics[2048];
     build_diagnostics_text(ctx, diagnostics, sizeof(diagnostics));
     llrtsp_ui_copy_text(diagnostics);
+    return false;
+}
+
+static bool update_plugin_clicked(obs_properties_t *props,
+                                   obs_property_t *property, void *data)
+{
+    UNUSED_PARAMETER(props);
+    UNUSED_PARAMETER(property);
+    UNUSED_PARAMETER(data);
+
+    llrtsp_ui_open_url(
+        "https://github.com/Splinxes/obs-low-latency-rtsp-source/releases");
     return false;
 }
 
@@ -2286,7 +2349,19 @@ static void llrtsp_video_tick(void *data, float seconds)
     char text[768];
     enum obs_text_info_type type = OBS_TEXT_INFO_NORMAL;
     status_snapshot(ctx, text, sizeof(text), &type);
-    llrtsp_ui_update_status(obs_source_get_name(ctx->source), text, (int)type);
+    const char *source_name = obs_source_get_name(ctx->source);
+    llrtsp_ui_update_status(source_name, text, (int)type);
+
+    /* Keep the UniFi guidance synchronized even when the Properties dialog
+     * opens after the URL was already saved. This updates only the existing
+     * top information label and never rebuilds the OBS properties tree. */
+    gboolean show_unifi_hint = FALSE;
+    g_mutex_lock(&ctx->settings_mutex);
+    show_unifi_hint = ctx->unifi_hint_latched;
+    g_mutex_unlock(&ctx->settings_mutex);
+    llrtsp_ui_update_unifi_hint(source_name, obs_module_text("Info"),
+                                obs_module_text("UniFiRTSPHint"),
+                                show_unifi_hint);
 }
 
 static void llrtsp_update(void *data, obs_data_t *settings)
@@ -2310,6 +2385,23 @@ static void llrtsp_update(void *data, obs_data_t *settings)
 
     g_mutex_lock(&ctx->settings_mutex);
     const gboolean url_changed = g_strcmp0(ctx->url, url ? url : "") != 0;
+
+    if (url_changed) {
+        if (!url || !*url) {
+            ctx->unifi_hint_latched = FALSE;
+        } else if (unifi_protect_conversion_complete(url)) {
+            ctx->unifi_hint_latched = FALSE;
+        } else if (looks_like_unifi_protect_secure_url(url)) {
+            ctx->unifi_hint_latched = TRUE;
+        }
+        /*
+         * Otherwise keep the existing latched state. This is what preserves
+         * the guidance while the user temporarily has an incomplete scheme,
+         * port, or query string during editing.
+         */
+    }
+
+    const gboolean show_unifi_hint = ctx->unifi_hint_latched;
     g_free(ctx->url);
     ctx->url = g_strdup(url ? url : "");
     ctx->preset = CLAMP(preset, PRESET_LOW_LATENCY, PRESET_CUSTOM);
@@ -2334,6 +2426,20 @@ static void llrtsp_update(void *data, obs_data_t *settings)
     if (url_changed || no_signal_changed)
         clear_video_output(ctx);
 
+    /*
+     * OBS password text properties do not reliably fire a per-field modified
+     * callback when text is pasted. The source update path does receive the
+     * committed setting change, so detect the Protect RTSPS pattern here.
+     * Trigger only when the URL actually changes to avoid repeated popups from
+     * unrelated setting updates.
+     */
+    if (url_changed)
+        llrtsp_ui_update_unifi_hint(
+            obs_source_get_name(ctx->source),
+            obs_module_text("Info"),
+            obs_module_text("UniFiRTSPHint"),
+            show_unifi_hint);
+
     obs_source_set_audio_active(ctx->source, enable_audio);
     g_atomic_int_set(&ctx->restart_requested, 1);
 }
@@ -2345,8 +2451,19 @@ static void *llrtsp_create(obs_data_t *settings, obs_source_t *source)
     g_mutex_init(&ctx->settings_mutex);
     g_mutex_init(&ctx->stats_mutex);
 
+    /*
+     * This source is explicitly designed for minimum live latency. OBS async
+     * sources are buffered by default, which can retain older frames in the
+     * libobs async queue. Keep only the newest frame so creating/configuring a
+     * source at runtime behaves like a clean OBS startup.
+     */
+    obs_source_set_async_unbuffered(source, true);
+
     const char *url = obs_data_get_string(settings, SETTING_URL);
     ctx->url = g_strdup(url ? url : "");
+    ctx->unifi_hint_latched =
+        looks_like_unifi_protect_secure_url(ctx->url) &&
+        !unifi_protect_conversion_complete(ctx->url);
     ctx->preset = (gint)obs_data_get_int(settings, SETTING_PRESET);
     ctx->latency_ms = (gint)obs_data_get_int(settings, SETTING_LATENCY_MS);
     ctx->max_buffers = (gint)obs_data_get_int(settings, SETTING_MAX_BUFFERS);
@@ -2423,8 +2540,22 @@ static obs_properties_t *llrtsp_properties(void *data)
         props, PROP_INFO, obs_module_text("Info"), OBS_TEXT_INFO);
     obs_property_text_set_info_word_wrap(info, true);
 
+    /*
+     * A brand-new source starts with the URL visible so the user can paste and
+     * correct it (especially useful for UniFi Protect's RTSPS conversion).
+     * Once a URL has been saved, future Properties sessions use the normal
+     * password-style masked field again.
+     */
+    gboolean has_saved_url = FALSE;
+    if (ctx) {
+        g_mutex_lock(&ctx->settings_mutex);
+        has_saved_url = ctx->url && *ctx->url;
+        g_mutex_unlock(&ctx->settings_mutex);
+    }
+
     obs_property_t *url = obs_properties_add_text(
-        props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
+        props, SETTING_URL, obs_module_text("URL"),
+        has_saved_url ? OBS_TEXT_PASSWORD : OBS_TEXT_DEFAULT);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
 
     obs_property_t *preset = obs_properties_add_list(
@@ -2522,9 +2653,6 @@ static obs_properties_t *llrtsp_properties(void *data)
         current_audio = ctx->enable_audio;
         g_mutex_unlock(&ctx->settings_mutex);
     }
-    update_property_visibility(props, current_preset, current_advanced,
-                               current_audio);
-
     obs_property_t *status = obs_properties_add_text(
         props, PROP_STATUS, "", OBS_TEXT_INFO);
     obs_property_text_set_info_word_wrap(status, true);
@@ -2533,6 +2661,9 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_properties_add_button2(props, PROP_RECONNECT_NOW,
                                obs_module_text("ReconnectNow"),
                                reconnect_now_clicked, ctx);
+    obs_properties_add_button2(props, PROP_UPDATE_PLUGIN,
+                               obs_module_text("UpdatePlugin"),
+                               update_plugin_clicked, ctx);
     obs_properties_add_button2(props, PROP_COPY_DIAGNOSTICS,
                                obs_module_text("CopyDiagnostics"),
                                copy_diagnostics_clicked, ctx);
@@ -2542,6 +2673,13 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_properties_add_button2(props, PROP_RESET_STATS,
                                obs_module_text("ResetStats"),
                                reset_stats_clicked, ctx);
+
+    /*
+     * Run visibility after every property/button has been created so the
+     * initial Properties view matches the saved Advanced setting.
+     */
+    update_property_visibility(props, current_preset, current_advanced,
+                               current_audio);
 
     return props;
 }
