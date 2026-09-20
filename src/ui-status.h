@@ -19,6 +19,9 @@ void llrtsp_ui_update_status(const char *source_name, const char *status_text,
 /* Copy privacy-safe diagnostics to the system clipboard on OBS's UI thread. */
 void llrtsp_ui_copy_text(const char *text);
 
+/* Open a trusted project URL in the user's default browser. */
+void llrtsp_ui_open_url(const char *url);
+
 /*
  * Append or remove privacy-safe UniFi Protect URL guidance from the existing
  * top information label in an open Properties dialog. The pasted URL itself
