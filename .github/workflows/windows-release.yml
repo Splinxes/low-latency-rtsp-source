@@ -82,12 +82,15 @@ jobs:
           $pluginRoot = Join-Path $packageRoot 'low-latency-rtsp'
           $binRoot = Join-Path $pluginRoot 'bin\64bit'
           $localeRoot = Join-Path $pluginRoot 'data\locale'
+          $updaterRoot = Join-Path $pluginRoot 'data\updater'
 
           New-Item -ItemType Directory -Path $binRoot -Force | Out-Null
           New-Item -ItemType Directory -Path $localeRoot -Force | Out-Null
+          New-Item -ItemType Directory -Path $updaterRoot -Force | Out-Null
 
           Copy-Item 'dist\low-latency-rtsp.dll' (Join-Path $binRoot 'low-latency-rtsp.dll') -Force
           Copy-Item 'data\locale\en-US.ini' (Join-Path $localeRoot 'en-US.ini') -Force
+          Copy-Item 'data\updater\Install-Update.ps1' (Join-Path $updaterRoot 'Install-Update.ps1') -Force
           Copy-Item 'scripts\Install-Release.ps1' (Join-Path $packageRoot 'Install-Release.ps1') -Force
           Copy-Item 'README.md' (Join-Path $packageRoot 'README.md') -Force
           Copy-Item 'LICENSE' (Join-Path $packageRoot 'LICENSE') -Force
