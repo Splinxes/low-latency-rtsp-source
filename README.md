@@ -73,21 +73,31 @@ If the GStreamer development files are missing, `scripts\Enable-GStreamer-Devel.
 
 ## Install
 
-Close OBS completely, then run:
+For releases that include the Windows installer, the recommended install path is:
 
-```powershell
-.\scripts\Install-Plugin.ps1
+```text
+Low-Latency-RTSP-Setup-vX.Y.Z.exe
 ```
 
-The plugin is installed under:
+Close OBS completely, run the installer, approve the Windows administrator prompt, and finish setup. The installer supports clean installs and in-place upgrades, registers the plugin in Windows Apps / Installed apps, and provides a normal uninstaller. The installer is currently unsigned, so Windows may show an **Unknown Publisher** warning.
+
+The plugin files are installed under:
 
 ```text
 C:\ProgramData\obs-studio\plugins\low-latency-rtsp
 ```
 
+The installer metadata and uninstaller are kept separately under Program Files so the in-plugin self-updater can safely replace the plugin directory without breaking Windows uninstall support.
+
+For local development builds, close OBS completely and run:
+
+```powershell
+.\scripts\Install-Plugin.ps1
+```
+
 Restart OBS and add **Low Latency RTSP** from the Sources menu.
 
-To remove the plugin:
+Development installs can still be removed with:
 
 ```powershell
 .\scripts\Uninstall-Plugin.ps1
