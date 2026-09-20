@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,10 +20,10 @@ void llrtsp_ui_update_status(const char *source_name, const char *status_text,
 void llrtsp_ui_copy_text(const char *text);
 
 /*
- * Show a one-time, privacy-safe hint when a UniFi Protect secure RTSPS URL is
- * pasted into the RTSP field. The pasted URL itself is never shown.
+ * Show or hide the privacy-safe inline UniFi Protect URL guidance in an open
+ * Properties dialog. The pasted URL itself is never shown.
  */
-void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name);
+void llrtsp_ui_update_unifi_hint(const char *source_name, bool visible);
 
 #ifdef __cplusplus
 }
