@@ -31,7 +31,7 @@
 
 namespace {
 
-static constexpr qint64 MAX_UPDATE_DOWNLOAD_BYTES = 128LL * 1024LL * 1024LL;
+static constexpr qint64 MAX_UPDATE_DOWNLOAD_BYTES = 512LL * 1024LL * 1024LL;
 static std::atomic_bool update_in_progress{false};
 
 static QString normalized_version(QString version)
@@ -150,7 +150,7 @@ static HttpResult fetch_https_url(const QUrl &url)
     const std::wstring request_target = target.toStdWString();
 
     HINTERNET session = WinHttpOpen(
-        L"OBS-Low-Latency-RTSP-Updater/0.5.3",
+        L"OBS-Low-Latency-RTSP-Updater/0.6.0",
         WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
         WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) {
@@ -496,7 +496,7 @@ static bool launch_update_helper(const StagedUpdate &staged,
 
     HINSTANCE launched = ShellExecuteW(
         nullptr, L"runas", powershell_w.c_str(),
-        parameters_w.c_str(), nullptr, SW_SHOWNORMAL);
+        parameters_w.c_str(), nullptr, SW_HIDE);
 
     const auto result = reinterpret_cast<INT_PTR>(launched);
     if (result <= 32) {
