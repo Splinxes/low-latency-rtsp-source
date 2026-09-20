@@ -1,8 +1,12 @@
+<p align="center">
+  <img src="assets/low-latency-rtsp-logo.jpg" alt="Low Latency RTSP for OBS Studio" width="420">
+</p>
+
 # OBS - Low Latency RTSP Source
 
 A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
 
-**Current stable release: v0.5.2**
+**Current stable release: v0.5.4**
 
 ## What it does
 
