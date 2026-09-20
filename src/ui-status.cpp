@@ -4,11 +4,13 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QDesktopServices>
 #include <QLabel>
 #include <QMetaObject>
 #include <QStyle>
 #include <QString>
 #include <QVariant>
+#include <QUrl>
 #include <QWidget>
 
 namespace {
@@ -105,6 +107,20 @@ extern "C" void llrtsp_ui_copy_text(const char *text)
             QClipboard *clipboard = QApplication::clipboard();
             if (clipboard)
                 clipboard->setText(clipboardText);
+        },
+        Qt::QueuedConnection);
+}
+
+extern "C" void llrtsp_ui_open_url(const char *url)
+{
+    if (!qApp || !url || !*url)
+        return;
+
+    const QString target = QString::fromUtf8(url);
+    QMetaObject::invokeMethod(
+        qApp,
+        [target]() {
+            QDesktopServices::openUrl(QUrl(target));
         },
         Qt::QueuedConnection);
 }
