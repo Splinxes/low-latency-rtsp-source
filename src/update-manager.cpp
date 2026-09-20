@@ -150,7 +150,7 @@ static HttpResult fetch_https_url(const QUrl &url)
     const std::wstring request_target = target.toStdWString();
 
     HINTERNET session = WinHttpOpen(
-        L"OBS-Low-Latency-RTSP-Updater/0.6.1",
+        L"Low-Latency-RTSP-Updater/0.6.2",
         WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
         WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) {
@@ -231,7 +231,7 @@ static HttpResult fetch_https_url(const QUrl &url)
             static_cast<qint64>(available);
         if (new_size > MAX_UPDATE_DOWNLOAD_BYTES) {
             result.error =
-                QStringLiteral("The update download exceeded the 128 MB safety limit.");
+                QStringLiteral("The update download exceeded the 512 MB safety limit.");
             break;
         }
 
@@ -259,10 +259,15 @@ static HttpResult fetch_https_url(const QUrl &url)
 
 static bool is_expected_release_asset_url(const QString &url)
 {
-    static const QString prefix = QStringLiteral(
+    static const QString canonical_prefix = QStringLiteral(
         "https://github.com/Splinxes/low-latency-rtsp-source/"
         "releases/download/");
-    return url.startsWith(prefix, Qt::CaseInsensitive);
+    static const QString legacy_prefix = QStringLiteral(
+        "https://github.com/Splinxes/obs-low-latency-rtsp-source/"
+        "releases/download/");
+
+    return url.startsWith(canonical_prefix, Qt::CaseInsensitive) ||
+           url.startsWith(legacy_prefix, Qt::CaseInsensitive);
 }
 
 static bool valid_sha256_hex(const QByteArray &hash)
@@ -731,6 +736,6 @@ extern "C" void llrtsp_ui_check_for_update(const char *current_version)
     QDesktopServices::openUrl(
         QUrl(QStringLiteral(
             "https://github.com/Splinxes/"
-            "obs-low-latency-rtsp-source/releases")));
+            "low-latency-rtsp-source/releases")));
 #endif
 }
