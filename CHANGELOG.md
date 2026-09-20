@@ -2,6 +2,7 @@
 
 ## v0.5.1 (development)
 
+- Keeps the UniFi guidance visible through partial conversions and hides it only after all three fixes are complete: `rtsps://` -> `rtsp://`, `:7441` -> `:7447`, and removal of `enableSrtp`.
 - Added a `GitHub / Updates` button to the source Properties window that opens the project's GitHub Releases page in the default browser.
 - Added inline UniFi Protect URL guidance when a secure `rtsps://` link using port 7441 or `enableSrtp` is entered in the RTSP URL field.
 - The guidance appears inside the existing top information area of the Properties window instead of using a modal popup, so editing the URL is never interrupted.
