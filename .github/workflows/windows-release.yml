@@ -236,19 +236,71 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $version = '${{ steps.version.outputs.version }}'
           $tag = '${{ steps.version.outputs.tag }}'
+          $stableInstallerName = 'Low-Latency-RTSP-Setup.exe'
+          $stableChecksumName = "$stableInstallerName.sha256"
 
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
-            Write-Host "Release $tag already exists; nothing to publish."
+            # Keep the stable /latest/download installer URL working without
+            # replacing the versioned assets of an already-published tag.
+            $existingDir = Join-Path $env:RUNNER_TEMP 'existing-release-assets'
+            New-Item -ItemType Directory -Path $existingDir -Force | Out-Null
+
+            $versionedInstallerName = "Low-Latency-RTSP-Setup-v$version.exe"
+            gh release download $tag `
+              --repo $env:GITHUB_REPOSITORY `
+              --pattern $versionedInstallerName `
+              --dir $existingDir
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not download $versionedInstallerName from existing release $tag."
+            }
+
+            $versionedInstaller = Join-Path $existingDir $versionedInstallerName
+            if (-not (Test-Path $versionedInstaller)) {
+              throw "Existing release installer was not found at $versionedInstaller."
+            }
+
+            $stableInstaller = Join-Path $existingDir $stableInstallerName
+            $stableChecksum = Join-Path $existingDir $stableChecksumName
+            Copy-Item $versionedInstaller $stableInstaller -Force
+
+            $hash = (Get-FileHash $stableInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $stableInstallerName" | Set-Content -Path $stableChecksum -Encoding ASCII
+
+            gh release upload $tag `
+              $stableInstaller `
+              $stableChecksum `
+              --repo $env:GITHUB_REPOSITORY `
+              --clobber
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not refresh stable installer assets on release $tag."
+            }
+
+            Write-Host "Release $tag already exists; refreshed stable installer aliases only."
             exit 0
           }
+
+          $stableDir = Join-Path $env:RUNNER_TEMP 'stable-release-assets'
+          New-Item -ItemType Directory -Path $stableDir -Force | Out-Null
+
+          $stableInstaller = Join-Path $stableDir $stableInstallerName
+          $stableChecksum = Join-Path $stableDir $stableChecksumName
+          Copy-Item '${{ steps.installer.outputs.exe }}' $stableInstaller -Force
+
+          $hash = (Get-FileHash $stableInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $stableInstallerName" | Set-Content -Path $stableChecksum -Encoding ASCII
 
           gh release create $tag `
             '${{ steps.package.outputs.zip }}' `
             '${{ steps.package.outputs.checksum }}' `
             '${{ steps.installer.outputs.exe }}' `
             '${{ steps.installer.outputs.checksum }}' `
+            $stableInstaller `
+            $stableChecksum `
             --repo $env:GITHUB_REPOSITORY `
             --target $env:GITHUB_SHA `
             --title "Low Latency RTSP $tag" `
