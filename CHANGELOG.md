@@ -1,6 +1,18 @@
 # Changelog
 
-## v0.5.4 (development)
+## v0.6.0
+
+- Added a normal Windows EXE installer built with Inno Setup for clean installs and in-place upgrades.
+- Bundled a private GStreamer 1.28.7 MSVC x64 runtime with Windows release packages, so end users no longer need to install GStreamer separately.
+- The plugin now prefers its bundled GStreamer runtime while retaining external-runtime fallback for development and legacy installs.
+- Added Windows Installed Apps / uninstaller support; uninstall removes the plugin and its private bundled GStreamer runtime without touching any separately installed system GStreamer copy.
+- Added the project logo to the GitHub README and refreshed installation documentation around the EXE-first flow.
+- Raised the self-updater download safety limit from 128 MB to 512 MB to support the larger self-contained release package.
+- Hide the elevated Windows PowerShell console used by the self-updater while preserving the normal UAC prompt and updater error dialogs.
+- Corrected the runtime log version to report v0.6.0.
+- Validated the installer on a clean Windows PC with OBS installed and no separate GStreamer installation; the Low Latency RTSP source installed, loaded, and streamed successfully.
+
+## v0.5.4
 
 - Validation release for the v0.5.3 Windows self-updater.
 - No RTSP engine, decoder, audio, reconnect, watchdog, source settings, or no-signal behavior changes.
