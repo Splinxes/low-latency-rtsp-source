@@ -195,7 +195,7 @@ bool obs_module_load(void)
     guint major = 0, minor = 0, micro = 0, nano = 0;
     gst_version(&major, &minor, &micro, &nano);
     blog(LOG_INFO,
-         "[low-latency-rtsp] Loaded v0.6.1 with GStreamer %u.%u.%u",
+         "[low-latency-rtsp] Loaded v0.6.2 with GStreamer %u.%u.%u",
          major, minor, micro);
     return true;
 }
