@@ -98,10 +98,6 @@ struct llrtsp_source {
     gboolean show_advanced;
     gint no_signal_mode;
 
-    /* UI-only state: avoid repeating the UniFi hint while the same kind of
-     * secure Protect URL remains in the field. */
-    gboolean unifi_hint_active;
-
     gint stop_requested;
     gint restart_requested;
 
@@ -885,29 +881,6 @@ static gboolean looks_like_unifi_protect_secure_url(const char *url)
         g_strrstr(url, "&enableSrtp") != NULL;
 
     return secure_scheme && (protect_port || srtp_query);
-}
-
-static bool url_modified(void *priv, obs_properties_t *props,
-                         obs_property_t *property, obs_data_t *settings)
-{
-    UNUSED_PARAMETER(props);
-    UNUSED_PARAMETER(property);
-
-    struct llrtsp_source *ctx = priv;
-    if (!ctx)
-        return false;
-
-    const char *url = obs_data_get_string(settings, SETTING_URL);
-    const gboolean show_hint = looks_like_unifi_protect_secure_url(url);
-
-    if (show_hint && !ctx->unifi_hint_active) {
-        ctx->unifi_hint_active = TRUE;
-        llrtsp_ui_show_unifi_rtsp_hint(obs_source_get_name(ctx->source));
-    } else if (!show_hint) {
-        ctx->unifi_hint_active = FALSE;
-    }
-
-    return false;
 }
 
 static bool properties_modified(void *priv, obs_properties_t *props,
@@ -2378,6 +2351,16 @@ static void llrtsp_update(void *data, obs_data_t *settings)
     if (url_changed || no_signal_changed)
         clear_video_output(ctx);
 
+    /*
+     * OBS password text properties do not reliably fire a per-field modified
+     * callback when text is pasted. The source update path does receive the
+     * committed setting change, so detect the Protect RTSPS pattern here.
+     * Trigger only when the URL actually changes to avoid repeated popups from
+     * unrelated setting updates.
+     */
+    if (url_changed && looks_like_unifi_protect_secure_url(url))
+        llrtsp_ui_show_unifi_rtsp_hint(obs_source_get_name(ctx->source));
+
     obs_source_set_audio_active(ctx->source, enable_audio);
     g_atomic_int_set(&ctx->restart_requested, 1);
 }
@@ -2470,7 +2453,6 @@ static obs_properties_t *llrtsp_properties(void *data)
     obs_property_t *url = obs_properties_add_text(
         props, SETTING_URL, obs_module_text("URL"), OBS_TEXT_PASSWORD);
     obs_property_set_long_description(url, obs_module_text("URLHelp"));
-    obs_property_set_modified_callback2(url, url_modified, ctx);
 
     obs_property_t *preset = obs_properties_add_list(
         props, SETTING_PRESET, obs_module_text("Preset"),
