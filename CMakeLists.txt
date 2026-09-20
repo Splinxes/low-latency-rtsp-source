@@ -63,6 +63,7 @@ target_sources(
     src/low-latency-rtsp.c
     src/ui-status.cpp
     src/ui-status.h
+    src/update-manager.cpp
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

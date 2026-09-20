@@ -36,6 +36,30 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+      - name: Validate PowerShell installer scripts
+        shell: pwsh
+        run: |
+          $paths = @(
+            'scripts\Install-Plugin.ps1',
+            'scripts\Install-Release.ps1',
+            'data\updater\Install-Update.ps1'
+          )
+
+          foreach ($path in $paths) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $path),
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell syntax validation failed for $path."
+            }
+          }
+
       - name: Install GStreamer 1.28.7 development package
         shell: pwsh
         run: |
@@ -82,12 +106,15 @@ jobs:
           $pluginRoot = Join-Path $packageRoot 'low-latency-rtsp'
           $binRoot = Join-Path $pluginRoot 'bin\64bit'
           $localeRoot = Join-Path $pluginRoot 'data\locale'
+          $updaterRoot = Join-Path $pluginRoot 'data\updater'
 
           New-Item -ItemType Directory -Path $binRoot -Force | Out-Null
           New-Item -ItemType Directory -Path $localeRoot -Force | Out-Null
+          New-Item -ItemType Directory -Path $updaterRoot -Force | Out-Null
 
           Copy-Item 'dist\low-latency-rtsp.dll' (Join-Path $binRoot 'low-latency-rtsp.dll') -Force
           Copy-Item 'data\locale\en-US.ini' (Join-Path $localeRoot 'en-US.ini') -Force
+          Copy-Item 'data\updater\Install-Update.ps1' (Join-Path $updaterRoot 'Install-Update.ps1') -Force
           Copy-Item 'scripts\Install-Release.ps1' (Join-Path $packageRoot 'Install-Release.ps1') -Force
           Copy-Item 'README.md' (Join-Path $packageRoot 'README.md') -Force
           Copy-Item 'LICENSE' (Join-Path $packageRoot 'LICENSE') -Force

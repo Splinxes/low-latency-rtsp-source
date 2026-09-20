@@ -1,6 +1,17 @@
 # Changelog
 
-## v0.5.2 (development)
+## v0.5.3 (development)
+
+- Added an end-to-end Windows self-updater behind `Update Plugin`.
+- Newer releases now offer `Download & Install` instead of only opening GitHub.
+- The plugin accepts release assets only from this repository's GitHub Releases path and requires the expected versioned Windows ZIP plus its published `.sha256` file.
+- Update downloads are verified with SHA-256 before any installed plugin files are touched.
+- A temporary elevated PowerShell helper runs outside OBS, requests a normal OBS shutdown, waits for the process to exit, backs up the installed plugin, replaces it from the verified release ZIP, restores the backup if replacement fails, and reopens OBS.
+- The updater refuses to force-kill OBS. If OBS does not close normally, the update stops without replacing plugin files.
+- Local and release installers now install the updater helper under the plugin data directory, and release ZIPs include it for future upgrades.
+- The streaming, decoder, audio, reconnect, watchdog, and no-signal engine are unchanged.
+
+## v0.5.2
 
 - Reworked `Update Plugin` into a real version check against the public GitHub Releases API instead of blindly opening the releases page.
 - The update check reports when the installed version is current and offers to open the exact latest release when a newer version is available.
