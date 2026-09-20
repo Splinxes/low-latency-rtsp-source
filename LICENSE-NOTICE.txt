@@ -1,4 +1,4 @@
-OBS - Low Latency RTSP Source
+Low Latency RTSP
 SPDX-License-Identifier: GPL-2.0-or-later
 
 This plugin is intended to be distributed under the GNU General Public License,

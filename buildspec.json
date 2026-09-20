@@ -33,12 +33,12 @@
   },
   "platformConfig": {
     "macos": {
-      "bundleId": "com.splinxes.obs.low-latency-rtsp"
+      "bundleId": "com.splinxes.low-latency-rtsp"
     }
   },
   "name": "low-latency-rtsp",
-  "displayName": "OBS - Low Latency RTSP Source",
-  "version": "0.6.1",
+  "displayName": "Low Latency RTSP",
+  "version": "0.6.2",
   "author": "Splinxes",
   "website": "https://github.com/Splinxes/low-latency-rtsp-source",
   "email": ""

@@ -2,7 +2,7 @@
   #define MyAppVersion "0.0.0"
 #endif
 
-#define MyAppName "Low Latency RTSP for OBS Studio"
+#define MyAppName "Low Latency RTSP"
 #define MyAppPublisher "Splinxes"
 #define MyAppURL "https://github.com/Splinxes/low-latency-rtsp-source"
 
@@ -15,7 +15,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
-DefaultDirName={autopf}\Low Latency RTSP for OBS Studio
+AppComments=Third-party RTSP source plugin for OBS Studio
+DefaultDirName={autopf}\Low Latency RTSP
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 DirExistsWarning=no
