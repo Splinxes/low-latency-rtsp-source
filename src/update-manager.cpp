@@ -478,7 +478,7 @@ static bool launch_update_helper(const StagedUpdate &staged,
 
     const QString parameters =
         QStringLiteral(
-            "-NoProfile -ExecutionPolicy Bypass "
+            "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass "
             "-File %1 -PackageZip %2 -ExpectedHash %3 "
             "-ObsPid %4 -ObsExe %5")
             .arg(quoted_windows_argument(
