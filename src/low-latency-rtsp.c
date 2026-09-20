@@ -36,7 +36,7 @@
 #define PROP_UPDATE_PLUGIN "update_plugin"
 #define PROP_VERSION "version_info"
 
-#define LLRTSP_VERSION "0.5.1"
+#define LLRTSP_VERSION "0.5.2"
 
 #define PRESET_LOW_LATENCY 0
 #define PRESET_BALANCED 1
@@ -1172,8 +1172,7 @@ static bool update_plugin_clicked(obs_properties_t *props,
     UNUSED_PARAMETER(property);
     UNUSED_PARAMETER(data);
 
-    llrtsp_ui_open_url(
-        "https://github.com/Splinxes/obs-low-latency-rtsp-source/releases");
+    llrtsp_ui_check_for_update(LLRTSP_VERSION);
     return false;
 }
 
