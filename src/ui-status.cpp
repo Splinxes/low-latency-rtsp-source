@@ -6,7 +6,6 @@
 #include <QClipboard>
 #include <QLabel>
 #include <QMetaObject>
-#include <QMessageBox>
 #include <QStyle>
 #include <QString>
 #include <QVariant>
@@ -110,7 +109,8 @@ extern "C" void llrtsp_ui_copy_text(const char *text)
         Qt::QueuedConnection);
 }
 
-extern "C" void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name)
+extern "C" void llrtsp_ui_update_unifi_hint(const char *source_name,
+                                             bool visible)
 {
     if (!qApp || !source_name || !*source_name)
         return;
@@ -119,12 +119,10 @@ extern "C" void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name)
 
     QMetaObject::invokeMethod(
         qApp,
-        [sourceName]() {
-            QWidget *parent = nullptr;
+        [sourceName, visible]() {
             const auto windows = QApplication::topLevelWidgets();
-
             for (QWidget *window : windows) {
-                if (!window || !window->isVisible())
+                if (!window)
                     continue;
 
                 const char *className = window->metaObject()->className();
@@ -137,29 +135,18 @@ extern "C" void llrtsp_ui_show_unifi_rtsp_hint(const char *source_name)
                                                      Qt::CaseSensitive))
                     continue;
 
-                parent = window;
-                break;
-            }
+                const auto labels = window->findChildren<QLabel *>();
+                for (QLabel *label : labels) {
+                    if (!label->text().contains(
+                            QStringLiteral("UniFi Protect secure RTSPS link detected."),
+                            Qt::CaseSensitive))
+                        continue;
 
-            QMessageBox box(parent);
-            box.setIcon(QMessageBox::Warning);
-            box.setWindowTitle(
-                QStringLiteral("UniFi Protect RTSPS Link Detected"));
-            box.setTextFormat(Qt::PlainText);
-            box.setText(QStringLiteral(
-                "This looks like a secure UniFi Protect RTSPS link. "
-                "Low Latency RTSP currently expects the standard RTSP form "
-                "for this connection."));
-            box.setInformativeText(QStringLiteral(
-                "Change only these parts:\n\n"
-                "rtsps://  ->  rtsp://\n"
-                ":7441     ->  :7447\n"
-                "remove    ->  ?enableSrtp\n\n"
-                "Keep the stream ID/path exactly the same.\n\n"
-                "For privacy, the plugin does not display or modify your "
-                "pasted URL."));
-            box.setStandardButtons(QMessageBox::Ok);
-            box.exec();
+                    label->setWordWrap(true);
+                    label->setVisible(visible);
+                    return;
+                }
+            }
         },
         Qt::QueuedConnection);
 }
