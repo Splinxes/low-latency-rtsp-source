@@ -1,8 +1,4 @@
 <p align="center">
-  <img src="assets/low-latency-rtsp-logo.jpg" alt="Low Latency RTSP for OBS Studio" width="420">
-</p>
-
-<p align="center">
   <a href="https://github.com/Splinxes/low-latency-rtsp-source/releases/latest/download/Low-Latency-RTSP-Setup.exe">
     <img src="https://img.shields.io/badge/Download%20for%20Windows-.EXE-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Download for Windows">
   </a>
@@ -16,11 +12,13 @@
   <a href="SECURITY.md">Security</a>
 </p>
 
-# OBS - Low Latency RTSP Source
+# Low Latency RTSP
 
-A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
+An independent third-party RTSP source plugin for OBS Studio, built around GStreamer for very low-latency monitoring and capture.
 
-**Current stable release: v0.6.1**
+This project is not affiliated with, endorsed by, or developed by the OBS Project.
+
+**Current stable release: v0.6.2**
 
 ## Quick install
 
@@ -70,16 +68,16 @@ The OBS source ID remains `low_latency_rtsp_gstreamer`, so existing source insta
 
 H.264/H.265 and the installer path have been exercised on real hardware. The v0.6.1 compatibility additions are also gated by CI checks against the exact bundled GStreamer runtime so a release fails if the required codec elements are missing.
 
-## What's new in v0.6.1
+## What's new in v0.6.2
 
-v0.6.1 expands camera compatibility and makes self-updates much clearer.
+v0.6.2 cleans up third-party branding and makes the updater resilient to the repository rename.
 
-- Added a visible installation progress window after UAC while the updater safely closes OBS, validates and extracts the package, backs up the current plugin, installs the new files, cleans up, and reopens OBS
-- Kept the underlying elevated PowerShell console hidden
-- Added Motion JPEG RTSP video support for standard `JPEG` RTP payloads
-- Added legacy MPEG-4 Part 2 RTSP video support for `MP4V-ES`
-- Added G.726 audio support, including the common bitrate-specific and AAL2 payload names
-- Added Windows CI checks that verify the bundled GStreamer runtime contains the required depayloaders, parser, and decoders before packaging
+- Product branding is now simply **Low Latency RTSP**
+- Removed the previous OBS-like project artwork and OBS-prefixed display names
+- The installer and Windows Installed Apps entry now use **Low Latency RTSP**
+- The updater now accepts release assets from both the current `low-latency-rtsp-source` repository path and the former `obs-low-latency-rtsp-source` path
+- Fixed the updater's safety-limit message to correctly report the existing 512 MB limit
+- Preserved the v0.6.1 update progress window and expanded RTSP codec compatibility
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
@@ -111,6 +109,8 @@ The Windows updater:
 
 The self-updater replaces the plugin directory, including its private GStreamer runtime.
 
+> **Repository rename note:** builds from v0.6.0 were created before the repository was renamed and reject the renamed GitHub asset URLs during their security check. If you are still on v0.6.0, install v0.6.2 manually once using the EXE. v0.6.1 and later use the current repository path, and v0.6.2 additionally trusts both the current and former paths for future resilience.
+
 ## Install location and uninstall
 
 The installed plugin lives under:
@@ -121,7 +121,7 @@ C:\ProgramData\obs-studio\plugins\low-latency-rtsp
 
 The bundled GStreamer runtime is stored privately under that plugin directory. It does not require or replace a machine-wide GStreamer installation.
 
-The installer registers **Low Latency RTSP for OBS Studio** in Windows **Settings → Apps → Installed apps**. Uninstalling removes the plugin and its private bundled GStreamer runtime. A separately installed system-wide GStreamer copy is left alone.
+The installer registers **Low Latency RTSP** in Windows **Settings → Apps → Installed apps**. Uninstalling removes the plugin and its private bundled GStreamer runtime. A separately installed system-wide GStreamer copy is left alone.
 
 Installer metadata and the uninstaller are kept outside the plugin directory so in-plugin updates can safely replace the plugin files without breaking Windows uninstall support.
 
