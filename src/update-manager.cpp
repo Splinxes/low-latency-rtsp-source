@@ -260,7 +260,7 @@ static HttpResult fetch_https_url(const QUrl &url)
 static bool is_expected_release_asset_url(const QString &url)
 {
     static const QString prefix = QStringLiteral(
-        "https://github.com/Splinxes/obs-low-latency-rtsp-source/"
+        "https://github.com/Splinxes/low-latency-rtsp-source/"
         "releases/download/");
     return url.startsWith(prefix, Qt::CaseInsensitive);
 }
@@ -714,7 +714,7 @@ extern "C" void llrtsp_ui_check_for_update(const char *current_version)
         const HttpResult result = fetch_https_url(
             QUrl(QStringLiteral(
                 "https://api.github.com/repos/"
-                "Splinxes/obs-low-latency-rtsp-source/"
+                "Splinxes/low-latency-rtsp-source/"
                 "releases/latest")));
 
         if (!application)
