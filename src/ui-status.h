@@ -22,7 +22,7 @@ void llrtsp_ui_copy_text(const char *text);
 /* Open a trusted project URL in the user's default browser. */
 void llrtsp_ui_open_url(const char *url);
 
-/* Check the public GitHub Releases feed and report whether an update exists. */
+/* Check GitHub Releases and, on Windows, offer a verified self-update when newer. */
 void llrtsp_ui_check_for_update(const char *current_version);
 
 /*
