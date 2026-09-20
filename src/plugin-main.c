@@ -135,6 +135,27 @@ static bool configure_gstreamer_runtime(void)
         if (GetFileAttributesW(scanner) != INVALID_FILE_ATTRIBUTES)
             SetEnvironmentVariableW(L"GST_PLUGIN_SCANNER_1_0", scanner);
 
+        /*
+         * gst-plugin-scanner.exe is a child process. SetDllDirectoryW() only
+         * affects this OBS process, so prepend the private runtime bin folder
+         * to PATH as well so the scanner can resolve its GStreamer/GLib DLLs.
+         */
+        wchar_t current_path[32768] = {0};
+        wchar_t private_path[32768] = {0};
+        DWORD path_len = GetEnvironmentVariableW(
+            L"PATH", current_path,
+            (DWORD)(sizeof(current_path) / sizeof(current_path[0])));
+
+        if (path_len == 0) {
+            SetEnvironmentVariableW(L"PATH", bin_dir);
+        } else if (path_len <
+                   (DWORD)(sizeof(current_path) / sizeof(current_path[0])) &&
+                   swprintf_s(private_path,
+                              sizeof(private_path) / sizeof(private_path[0]),
+                              L"%ls;%ls", bin_dir, current_path) >= 0) {
+            SetEnvironmentVariableW(L"PATH", private_path);
+        }
+
         blog(LOG_INFO,
              "[low-latency-rtsp] Using bundled private GStreamer runtime");
     } else {
