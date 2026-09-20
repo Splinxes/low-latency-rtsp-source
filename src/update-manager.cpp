@@ -387,7 +387,7 @@ static StagedUpdate download_and_stage_update(const ReleaseInfo &release)
     }
 
     const QString staging_root =
-        QDir::temp().filePath(
+        QDir(QDir::tempPath()).filePath(
             QStringLiteral("low-latency-rtsp-update-%1")
                 .arg(QCoreApplication::applicationPid()));
     QDir staging_dir(staging_root);
