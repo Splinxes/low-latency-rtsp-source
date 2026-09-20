@@ -2,9 +2,10 @@
 
 ## v0.5.1 (development)
 
-- Added a one-time UniFi Protect URL hint when a secure `rtsps://` link using port 7441 or `enableSrtp` is pasted into the RTSP URL field.
+- Added an inline UniFi Protect URL warning when a secure `rtsps://` link using port 7441 or `enableSrtp` is entered in the RTSP URL field.
+- The warning appears directly in the Properties window beneath the URL field instead of using a modal popup, so editing the URL is never interrupted.
 - The hint explains the standard Protect conversion: `rtsps://` to `rtsp://`, port `7441` to `7447`, and removal of `?enableSrtp`, while keeping the stream ID/path unchanged.
-- The popup never displays or logs the pasted RTSP URL or credentials.
+- The inline warning never displays or logs the pasted RTSP URL or credentials.
 - The plugin does not rewrite the URL automatically.
 - No changes to the streaming, decoder, audio, reconnect, watchdog, or no-signal engine.
 
