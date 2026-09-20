@@ -2451,6 +2451,14 @@ static void *llrtsp_create(obs_data_t *settings, obs_source_t *source)
     g_mutex_init(&ctx->settings_mutex);
     g_mutex_init(&ctx->stats_mutex);
 
+    /*
+     * This source is explicitly designed for minimum live latency. OBS async
+     * sources are buffered by default, which can retain older frames in the
+     * libobs async queue. Keep only the newest frame so creating/configuring a
+     * source at runtime behaves like a clean OBS startup.
+     */
+    obs_source_set_async_unbuffered(source, true);
+
     const char *url = obs_data_get_string(settings, SETTING_URL);
     ctx->url = g_strdup(url ? url : "");
     ctx->unifi_hint_latched =
