@@ -874,14 +874,36 @@ static gboolean looks_like_unifi_protect_secure_url(const char *url)
 
     const gboolean secure_scheme =
         g_ascii_strncasecmp(url, "rtsps://", 8) == 0;
-    const gboolean protect_port =
+    const gboolean normal_scheme =
+        g_ascii_strncasecmp(url, "rtsp://", 7) == 0;
+    const gboolean secure_port =
         g_strrstr(url, ":7441/") != NULL ||
         g_strrstr(url, ":7441?") != NULL;
+    const gboolean normal_port =
+        g_strrstr(url, ":7447/") != NULL ||
+        g_strrstr(url, ":7447?") != NULL;
     const gboolean srtp_query =
         g_strrstr(url, "?enableSrtp") != NULL ||
         g_strrstr(url, "&enableSrtp") != NULL;
 
-    return secure_scheme && (protect_port || srtp_query);
+    /*
+     * Keep the UniFi guidance visible until all three conversion steps are
+     * complete:
+     *   1. rtsps:// -> rtsp://
+     *   2. :7441    -> :7447
+     *   3. remove enableSrtp
+     *
+     * This intentionally treats partially converted Protect URLs as still
+     * needing guidance so the warning does not disappear midway through an
+     * edit.
+     */
+    const gboolean protect_candidate =
+        (secure_scheme || normal_scheme) &&
+        (secure_port || normal_port || srtp_query);
+    const gboolean conversion_complete =
+        normal_scheme && normal_port && !srtp_query;
+
+    return protect_candidate && !conversion_complete;
 }
 
 static bool properties_modified(void *priv, obs_properties_t *props,
