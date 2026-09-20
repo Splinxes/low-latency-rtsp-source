@@ -44,9 +44,20 @@ jobs:
           $root = Join-Path $env:RUNNER_TEMP 'gstreamer\1.0\msvc_x86_64'
 
           Invoke-WebRequest -Uri $url -OutFile $installer
-          & $installer /TYPE=devel /CURRENTUSER /VERYSILENT /NORESTART "/DIR=$root"
-          $installerExit = $LASTEXITCODE
+          $process = Start-Process -FilePath $installer -PassThru -ArgumentList @(
+            '/TYPE=devel',
+            '/CURRENTUSER',
+            '/VERYSILENT',
+            '/NORESTART',
+            "/DIR=$root"
+          )
 
+          if (-not $process.WaitForExit(180000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw 'GStreamer installer timed out after 3 minutes.'
+          }
+
+          $installerExit = $process.ExitCode
           if ($installerExit -notin @(0, 3010)) {
             throw "GStreamer installer exited with code $installerExit."
           }
