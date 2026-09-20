@@ -50,7 +50,6 @@ if(MSVC)
       "/DELAYLOAD:gstapp-1.0-0.dll"
       "/DELAYLOAD:gstvideo-1.0-0.dll"
       "/DELAYLOAD:gstreamer-1.0-0.dll"
-      "/DELAYLOAD:gstrtsp-1.0-0.dll"
       "/DELAYLOAD:gobject-2.0-0.dll"
       "/DELAYLOAD:glib-2.0-0.dll"
   )
