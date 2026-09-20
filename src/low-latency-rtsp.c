@@ -1778,6 +1778,53 @@ static void classify_gstreamer_error(const GError *error, const char *debug,
     g_strlcpy(out, "RTSP stream error", out_size);
 }
 
+struct llrtsp_rtp_codec_route {
+    const char *encoding;
+    const char *label;
+    const char *depay_factory;
+    const char *parser_factory;
+};
+
+static const struct llrtsp_rtp_codec_route video_codec_routes[] = {
+    {"H264", "H.264", "rtph264depay", "h264parse"},
+    {"H265", "H.265 / HEVC", "rtph265depay", "h265parse"},
+    {"HEVC", "H.265 / HEVC", "rtph265depay", "h265parse"},
+    {"JPEG", "Motion JPEG", "rtpjpegdepay", NULL},
+    {"MP4V-ES", "MPEG-4 Part 2", "rtpmp4vdepay", "mpeg4videoparse"},
+};
+
+static const struct llrtsp_rtp_codec_route audio_codec_routes[] = {
+    {"MPEG4-GENERIC", "AAC", "rtpmp4gdepay", NULL},
+    {"MP4A-LATM", "AAC-LATM", "rtpmp4adepay", NULL},
+    {"OPUS", "Opus", "rtpopusdepay", NULL},
+    {"PCMU", "G.711 mu-law", "rtppcmudepay", NULL},
+    {"PCMA", "G.711 A-law", "rtppcmadepay", NULL},
+    {"G726", "G.726", "rtpg726depay", NULL},
+    {"G726-16", "G.726 16 kbps", "rtpg726depay", NULL},
+    {"G726-24", "G.726 24 kbps", "rtpg726depay", NULL},
+    {"G726-32", "G.726 32 kbps", "rtpg726depay", NULL},
+    {"G726-40", "G.726 40 kbps", "rtpg726depay", NULL},
+    {"AAL2-G726-16", "G.726 16 kbps (AAL2)", "rtpg726depay", NULL},
+    {"AAL2-G726-24", "G.726 24 kbps (AAL2)", "rtpg726depay", NULL},
+    {"AAL2-G726-32", "G.726 32 kbps (AAL2)", "rtpg726depay", NULL},
+    {"AAL2-G726-40", "G.726 40 kbps (AAL2)", "rtpg726depay", NULL},
+};
+
+static const struct llrtsp_rtp_codec_route *
+find_codec_route(const struct llrtsp_rtp_codec_route *routes,
+                 size_t route_count, const char *encoding)
+{
+    if (!routes || !encoding)
+        return NULL;
+
+    for (size_t i = 0; i < route_count; i++) {
+        if (g_ascii_strcasecmp(encoding, routes[i].encoding) == 0)
+            return &routes[i];
+    }
+
+    return NULL;
+}
+
 static void on_rtsp_pad_added(GstElement *src, GstPad *new_pad,
                               gpointer user_data)
 {
@@ -1806,20 +1853,16 @@ static void on_rtsp_pad_added(GstElement *src, GstPad *new_pad,
             return;
         }
 
+        const struct llrtsp_rtp_codec_route *route =
+            find_codec_route(video_codec_routes,
+                             G_N_ELEMENTS(video_codec_routes), encoding);
         gboolean ok = FALSE;
-        const char *label = NULL;
 
-        if (g_ascii_strcasecmp(encoding, "H264") == 0) {
-            label = "H.264";
-            ok = add_rtp_branch(pctx, new_pad, "rtph264depay", "h264parse",
-                                pctx->video_decode, "video-depay-h264",
-                                "video-parse-h264");
-        } else if (g_ascii_strcasecmp(encoding, "H265") == 0 ||
-                   g_ascii_strcasecmp(encoding, "HEVC") == 0) {
-            label = "H.265 / HEVC";
-            ok = add_rtp_branch(pctx, new_pad, "rtph265depay", "h265parse",
-                                pctx->video_decode, "video-depay-h265",
-                                "video-parse-h265");
+        if (route) {
+            ok = add_rtp_branch(
+                pctx, new_pad, route->depay_factory, route->parser_factory,
+                pctx->video_decode, "video-depay",
+                route->parser_factory ? "video-parse" : NULL);
         } else {
             gchar reason[DIAGNOSTIC_TEXT_MAX];
             g_snprintf(reason, (gulong)sizeof(reason),
@@ -1834,12 +1877,15 @@ static void on_rtsp_pad_added(GstElement *src, GstPad *new_pad,
 
         if (ok) {
             stats_clear_codec_diagnostic(pctx->ctx, FALSE);
-            stats_set_codec(pctx->ctx, FALSE, label);
-            blog(LOG_INFO, "[low-latency-rtsp] Auto-detected video codec: %s", label);
+            stats_set_codec(pctx->ctx, FALSE, route->label);
+            blog(LOG_INFO,
+                 "[low-latency-rtsp] Auto-detected video codec: %s",
+                 route->label);
         } else {
             g_atomic_int_set(&pctx->video_claimed, 0);
         }
-    } else if (g_ascii_strcasecmp(media, "audio") == 0 && pctx->audio_enabled) {
+    } else if (g_ascii_strcasecmp(media, "audio") == 0 &&
+               pctx->audio_enabled) {
         stats_note_audio_track(pctx->ctx);
 
         if (!g_atomic_int_compare_and_exchange(&pctx->audio_claimed, 0, 1)) {
@@ -1847,30 +1893,16 @@ static void on_rtsp_pad_added(GstElement *src, GstPad *new_pad,
             return;
         }
 
-        const char *factory = NULL;
-        const char *label = NULL;
-
-        if (g_ascii_strcasecmp(encoding, "MPEG4-GENERIC") == 0) {
-            factory = "rtpmp4gdepay";
-            label = "AAC";
-        } else if (g_ascii_strcasecmp(encoding, "MP4A-LATM") == 0) {
-            factory = "rtpmp4adepay";
-            label = "AAC-LATM";
-        } else if (g_ascii_strcasecmp(encoding, "OPUS") == 0) {
-            factory = "rtpopusdepay";
-            label = "Opus";
-        } else if (g_ascii_strcasecmp(encoding, "PCMU") == 0) {
-            factory = "rtppcmudepay";
-            label = "G.711 mu-law";
-        } else if (g_ascii_strcasecmp(encoding, "PCMA") == 0) {
-            factory = "rtppcmadepay";
-            label = "G.711 A-law";
-        }
-
+        const struct llrtsp_rtp_codec_route *route =
+            find_codec_route(audio_codec_routes,
+                             G_N_ELEMENTS(audio_codec_routes), encoding);
         gboolean ok = FALSE;
-        if (factory) {
-            ok = add_rtp_branch(pctx, new_pad, factory, NULL,
-                                pctx->audio_decode, "audio-depay", NULL);
+
+        if (route) {
+            ok = add_rtp_branch(
+                pctx, new_pad, route->depay_factory, route->parser_factory,
+                pctx->audio_decode, "audio-depay",
+                route->parser_factory ? "audio-parse" : NULL);
         } else {
             gchar reason[DIAGNOSTIC_TEXT_MAX];
             gchar codec_label[CODEC_NAME_MAX];
@@ -1888,8 +1920,10 @@ static void on_rtsp_pad_added(GstElement *src, GstPad *new_pad,
 
         if (ok) {
             stats_clear_codec_diagnostic(pctx->ctx, TRUE);
-            stats_set_codec(pctx->ctx, TRUE, label);
-            blog(LOG_INFO, "[low-latency-rtsp] Auto-detected audio codec: %s", label);
+            stats_set_codec(pctx->ctx, TRUE, route->label);
+            blog(LOG_INFO,
+                 "[low-latency-rtsp] Auto-detected audio codec: %s",
+                 route->label);
         } else {
             g_atomic_int_set(&pctx->audio_claimed, 0);
         }
