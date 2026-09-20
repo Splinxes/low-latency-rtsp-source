@@ -2,6 +2,7 @@
 
 ## v0.5.1 (development)
 
+- Disabled libobs async video buffering for this low-latency source with `obs_source_set_async_unbuffered(..., true)`. OBS now keeps the newest delivered frame instead of allowing its async source queue to retain older frames, targeting the small first-add latency that disappears only after a full OBS restart.
 - Moved `Copy Diagnostics`, `Refresh Stats`, and `Reset Stats` under Advanced Settings to keep the default Properties view cleaner.
 - Renamed `GitHub / Updates` to `Update Plugin`; it still opens the project's GitHub Releases page.
 - The UniFi guidance now latches once a Protect secure URL is detected, so temporary partial edits (such as deleting a port digit) do not make the warning disappear. It clears only when the URL is fully converted or the field is cleared.
