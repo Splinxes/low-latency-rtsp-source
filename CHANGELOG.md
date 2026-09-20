@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.5.3 (development)
+## v0.5.4 (development)
+
+- Validation release for the v0.5.3 Windows self-updater.
+- No RTSP engine, decoder, audio, reconnect, watchdog, source settings, or no-signal behavior changes.
+- Intended to verify the complete in-plugin `Download & Install` flow from v0.5.3: download the versioned release ZIP and checksum, verify SHA-256, close OBS normally, replace the plugin, and reopen OBS.
+
+## v0.5.3
 
 - Added an end-to-end Windows self-updater behind `Update Plugin`.
 - Newer releases now offer `Download & Install` instead of only opening GitHub.
