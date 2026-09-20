@@ -99,6 +99,10 @@ struct llrtsp_source {
     gboolean show_advanced;
     gint no_signal_mode;
 
+    /* Once a Protect secure URL is detected, keep the guidance visible
+     * throughout partial edits until the conversion is fully complete. */
+    gboolean unifi_hint_latched;
+
     gint stop_requested;
     gint restart_requested;
 
@@ -874,11 +878,23 @@ static gboolean looks_like_unifi_protect_secure_url(const char *url)
 
     const gboolean secure_scheme =
         g_ascii_strncasecmp(url, "rtsps://", 8) == 0;
-    const gboolean normal_scheme =
-        g_ascii_strncasecmp(url, "rtsp://", 7) == 0;
     const gboolean secure_port =
         g_strrstr(url, ":7441/") != NULL ||
         g_strrstr(url, ":7441?") != NULL;
+    const gboolean srtp_query =
+        g_strrstr(url, "?enableSrtp") != NULL ||
+        g_strrstr(url, "&enableSrtp") != NULL;
+
+    return secure_scheme && (secure_port || srtp_query);
+}
+
+static gboolean unifi_protect_conversion_complete(const char *url)
+{
+    if (!url || !*url)
+        return FALSE;
+
+    const gboolean normal_scheme =
+        g_ascii_strncasecmp(url, "rtsp://", 7) == 0;
     const gboolean normal_port =
         g_strrstr(url, ":7447/") != NULL ||
         g_strrstr(url, ":7447?") != NULL;
@@ -886,24 +902,7 @@ static gboolean looks_like_unifi_protect_secure_url(const char *url)
         g_strrstr(url, "?enableSrtp") != NULL ||
         g_strrstr(url, "&enableSrtp") != NULL;
 
-    /*
-     * Keep the UniFi guidance visible until all three conversion steps are
-     * complete:
-     *   1. rtsps:// -> rtsp://
-     *   2. :7441    -> :7447
-     *   3. remove enableSrtp
-     *
-     * This intentionally treats partially converted Protect URLs as still
-     * needing guidance so the warning does not disappear midway through an
-     * edit.
-     */
-    const gboolean protect_candidate =
-        (secure_scheme || normal_scheme) &&
-        (secure_port || normal_port || srtp_query);
-    const gboolean conversion_complete =
-        normal_scheme && normal_port && !srtp_query;
-
-    return protect_candidate && !conversion_complete;
+    return normal_scheme && normal_port && !srtp_query;
 }
 
 static bool properties_modified(void *priv, obs_properties_t *props,
@@ -2344,13 +2343,13 @@ static void llrtsp_video_tick(void *data, float seconds)
     /* Keep the UniFi guidance synchronized even when the Properties dialog
      * opens after the URL was already saved. This updates only the existing
      * top information label and never rebuilds the OBS properties tree. */
-    gboolean unifi_secure = FALSE;
+    gboolean show_unifi_hint = FALSE;
     g_mutex_lock(&ctx->settings_mutex);
-    unifi_secure = looks_like_unifi_protect_secure_url(ctx->url);
+    show_unifi_hint = ctx->unifi_hint_latched;
     g_mutex_unlock(&ctx->settings_mutex);
     llrtsp_ui_update_unifi_hint(source_name, obs_module_text("Info"),
                                 obs_module_text("UniFiRTSPHint"),
-                                unifi_secure);
+                                show_unifi_hint);
 }
 
 static void llrtsp_update(void *data, obs_data_t *settings)
@@ -2374,6 +2373,23 @@ static void llrtsp_update(void *data, obs_data_t *settings)
 
     g_mutex_lock(&ctx->settings_mutex);
     const gboolean url_changed = g_strcmp0(ctx->url, url ? url : "") != 0;
+
+    if (url_changed) {
+        if (!url || !*url) {
+            ctx->unifi_hint_latched = FALSE;
+        } else if (unifi_protect_conversion_complete(url)) {
+            ctx->unifi_hint_latched = FALSE;
+        } else if (looks_like_unifi_protect_secure_url(url)) {
+            ctx->unifi_hint_latched = TRUE;
+        }
+        /*
+         * Otherwise keep the existing latched state. This is what preserves
+         * the guidance while the user temporarily has an incomplete scheme,
+         * port, or query string during editing.
+         */
+    }
+
+    const gboolean show_unifi_hint = ctx->unifi_hint_latched;
     g_free(ctx->url);
     ctx->url = g_strdup(url ? url : "");
     ctx->preset = CLAMP(preset, PRESET_LOW_LATENCY, PRESET_CUSTOM);
@@ -2410,7 +2426,7 @@ static void llrtsp_update(void *data, obs_data_t *settings)
             obs_source_get_name(ctx->source),
             obs_module_text("Info"),
             obs_module_text("UniFiRTSPHint"),
-            looks_like_unifi_protect_secure_url(url));
+            show_unifi_hint);
 
     obs_source_set_audio_active(ctx->source, enable_audio);
     g_atomic_int_set(&ctx->restart_requested, 1);
@@ -2425,6 +2441,9 @@ static void *llrtsp_create(obs_data_t *settings, obs_source_t *source)
 
     const char *url = obs_data_get_string(settings, SETTING_URL);
     ctx->url = g_strdup(url ? url : "");
+    ctx->unifi_hint_latched =
+        looks_like_unifi_protect_secure_url(ctx->url) &&
+        !unifi_protect_conversion_complete(ctx->url);
     ctx->preset = (gint)obs_data_get_int(settings, SETTING_PRESET);
     ctx->latency_ms = (gint)obs_data_get_int(settings, SETTING_LATENCY_MS);
     ctx->max_buffers = (gint)obs_data_get_int(settings, SETTING_MAX_BUFFERS);
