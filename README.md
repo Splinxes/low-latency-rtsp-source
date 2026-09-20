@@ -2,7 +2,7 @@
 
 A Windows OBS Studio source plugin built around GStreamer for very low-latency RTSP monitoring and capture.
 
-**Current stable release: v0.5.1**
+**Current stable release: v0.5.2**
 
 ## What it does
 
@@ -19,9 +19,11 @@ A Windows OBS Studio source plugin built around GStreamer for very low-latency R
 
 The source ID remains `low_latency_rtsp_gstreamer`, so existing OBS source instances are preserved across plugin upgrades.
 
-## v0.5.1 highlights
+## v0.5.2 highlights
 
-v0.5.1 targets OBS Studio 32.2.2 and adds UniFi Protect URL guidance, libobs async unbuffered mode for lower first-add latency, cleaner Properties controls, and fixes for multiple Low Latency RTSP sources being open at the same time.
+v0.5.2 adds public GitHub Releases, Windows release packaging, SHA-256 checksums, and an in-plugin update check while retaining the v0.5.1 low-latency and UniFi guidance behavior.
+
+The v0.5.3 development branch extends this into a verified self-update flow: download the exact Windows release asset, verify its published SHA-256 checksum, then use an elevated helper outside OBS to replace the loaded plugin safely and reopen OBS.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
@@ -113,7 +115,7 @@ Do not post a live RTSP URL in an issue. See [SECURITY.md](SECURITY.md).
 
 The plugin currently focuses on Windows and TCP RTSP streams. H.264 and H.265 video are supported. Common camera audio formats are supported when audio is enabled.
 
-Future release-preparation work includes bundling a private GStreamer runtime, producing a signed installer, and tightening packaging/release automation.
+Future release-preparation work includes bundling a private GStreamer runtime and code signing. Release packaging and update automation are now part of the project.
 
 ## License
 
