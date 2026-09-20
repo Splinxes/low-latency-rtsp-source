@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.0 (development)
+
+- Aligned the Windows build target with the OBS Studio 32.2.2 SDK.
+- Updated the pinned OBS dependency and Qt packages to the versions used by OBS Studio 32.2.2.
+- Changed the Windows bootstrap to use the verified OBS 32.2.2 tag tarball instead of the plugin template's Windows-only source ZIP convention.
+- Added an SDK target stamp so old libobs/Qt build caches are removed automatically when the SDK target changes.
+- Build output now prints the OBS SDK target explicitly.
+- Updated plugin/diagnostic version reporting to v0.5.0.
+- No changes to the v0.4.0 RTSP video, audio, reconnect, watchdog, decoder, or no-signal behavior.
+
 ## v0.4.0
 
 - Added an adaptive stalled-video watchdog with a 3-second minimum timeout and a 10-second initial-frame timeout.

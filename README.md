@@ -4,6 +4,8 @@ A Windows OBS Studio source plugin built around GStreamer for very low-latency R
 
 **Current stable baseline: v0.4.0**
 
+**Development branch (`dev/obs32-sdk`): v0.5.0 — OBS 32.2.2 SDK alignment**
+
 ## What it does
 
 - H.264 and H.265/HEVC RTSP video auto-detection
@@ -35,7 +37,7 @@ The current baseline has been tested on:
 - H.264 RTSP at 2688x1512 / 30 FPS
 - Direct3D 12 hardware decode through GStreamer (`d3d12h264dec`)
 
-The current build specification still uses the OBS 31.1.1 plugin SDK baseline. Moving the project to an OBS 32.x SDK is planned as release-preparation work and is intentionally separate from the validated streaming engine.
+The `dev/obs32-sdk` branch builds against the OBS Studio 32.2.2 SDK and the matching OBS dependency/Qt packages. The RTSP video/audio engine is intentionally unchanged from the validated v0.4.0 baseline.
 
 ## Requirements
 
@@ -115,7 +117,7 @@ Do not post a live RTSP URL in an issue. See [SECURITY.md](SECURITY.md).
 
 The plugin currently focuses on Windows and TCP RTSP streams. H.264 and H.265 video are supported. Common camera audio formats are supported when audio is enabled.
 
-Future release-preparation work includes bundling a private GStreamer runtime, aligning the build with the OBS 32.x SDK, producing a signed installer, and tightening packaging/release automation.
+Future release-preparation work includes bundling a private GStreamer runtime, producing a signed installer, and tightening packaging/release automation.
 
 ## License
 

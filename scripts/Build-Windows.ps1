@@ -3,6 +3,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ObsSdkVersion = '32.2.2'
+$ObsSourceArchiveSha256 = '35d3cd0979d65664fada7119fdb612eca7c34b61a1623a330caec74bf72626c4'
 $projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $bootstrapRoot = Join-Path $projectRoot '.bootstrap'
 $templateZip = Join-Path $bootstrapRoot 'obs-plugintemplate.zip'
@@ -64,6 +66,43 @@ if (-not (Test-Path $templateRoot)) {
     Expand-Archive -Path $templateZip -DestinationPath $templateExtract -Force
 }
 
+# The upstream plugin template currently uses VERSION.zip for OBS sources on
+# Windows. OBS 32.2.2 is pinned here to the tag tarball instead so Windows and
+# macOS use the same verified source archive/hash.
+$windowsBuildspec = Join-Path $templateRoot 'cmake\windows\buildspec.cmake'
+$windowsBuildspecText = Get-Content $windowsBuildspec -Raw
+$windowsBuildspecText = $windowsBuildspecText.Replace(
+    'set(obs-studio_filename "VERSION.zip")',
+    'set(obs-studio_filename "VERSION.tar.gz")'
+)
+if (-not $windowsBuildspecText.Contains('set(obs-studio_filename "VERSION.tar.gz")')) {
+    throw 'Could not configure the OBS plugin template to use the OBS source tarball.'
+}
+Set-Content -Path $windowsBuildspec -Value $windowsBuildspecText -Encoding UTF8
+
+$projectBuildspec = Get-Content (Join-Path $projectRoot 'buildspec.json') -Raw | ConvertFrom-Json
+if ($projectBuildspec.dependencies.'obs-studio'.version -ne $ObsSdkVersion) {
+    throw "buildspec.json OBS SDK version does not match expected target $ObsSdkVersion."
+}
+if ($projectBuildspec.dependencies.'obs-studio'.hashes.'windows-x64' -ne $ObsSourceArchiveSha256) {
+    throw 'buildspec.json OBS source archive hash does not match the pinned OBS 32.2.2 source archive.'
+}
+
+# Never reuse an older libobs/Qt dependency tree after changing SDK targets.
+$sdkStamp = Join-Path $bootstrapRoot 'obs-sdk-target.txt'
+$previousSdk = ''
+if (Test-Path $sdkStamp) {
+    $previousSdk = (Get-Content $sdkStamp -Raw).Trim()
+}
+if ($previousSdk -ne $ObsSdkVersion) {
+    Write-Host "Preparing clean OBS SDK $ObsSdkVersion dependency tree..." -ForegroundColor Cyan
+    $depsDir = Join-Path $templateRoot '.deps'
+    $buildDir = Join-Path $templateRoot 'build_x64'
+    if (Test-Path $depsDir) { Remove-Item $depsDir -Recurse -Force }
+    if (Test-Path $buildDir) { Remove-Item $buildDir -Recurse -Force }
+    Set-Content -Path $sdkStamp -Value $ObsSdkVersion -Encoding ASCII
+}
+
 Write-Host 'Applying Low Latency RTSP source files...' -ForegroundColor Cyan
 if (Test-Path (Join-Path $templateRoot 'src')) { Remove-Item (Join-Path $templateRoot 'src') -Recurse -Force }
 if (Test-Path (Join-Path $templateRoot 'data')) { Remove-Item (Join-Path $templateRoot 'data') -Recurse -Force }
@@ -78,7 +117,7 @@ $env:GSTREAMER_1_0_ROOT_MSVC_X86_64 = $gstRoot
 
 Push-Location $templateRoot
 try {
-    Write-Host 'Configuring for Visual Studio 2022 x64...' -ForegroundColor Cyan
+    Write-Host "Configuring against OBS Studio SDK $ObsSdkVersion (Visual Studio 2022 x64)..." -ForegroundColor Cyan
     & cmake.exe -S . -B build_x64 -G 'Visual Studio 17 2022' -A x64 -DENABLE_QT=ON
     if ($LASTEXITCODE -ne 0) { throw "CMake configure failed with exit code $LASTEXITCODE" }
 
@@ -108,5 +147,6 @@ Copy-Item (Join-Path $projectRoot 'data\locale\en-US.ini') (Join-Path $localeOut
 
 Write-Host ''
 Write-Host 'BUILD SUCCESS' -ForegroundColor Green
+Write-Host "OBS SDK target: $ObsSdkVersion"
 Write-Host "DLL: $outDir\low-latency-rtsp.dll"
 Write-Host 'Next: run scripts\Install-Plugin.ps1'
